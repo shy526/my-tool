@@ -63,7 +63,6 @@ public class ThreadPoolUtils {
 
     /**
      * 获取一个SingleThreadExecutor
-     *
      * @param beforeName 任务前戳
      * @return ThreadPoolExecutor
      */
@@ -80,7 +79,7 @@ public class ThreadPoolUtils {
     /**
      * 定时器线程池
      *
-     * @param beforeName   beforeName 滕武签错
+     * @param beforeName   beforeName 任务前戳
      * @param corePoolSize 核心线程池数
      * @return ScheduledThreadPoolExecutor
      */
@@ -90,7 +89,7 @@ public class ThreadPoolUtils {
 
     /**
      * 定时器线程池
-     * @param beforeName   beforeName 滕武签错
+     * @param beforeName   beforeName 任务前戳
      * @param corePoolSize 核心线程池数
      * @return ScheduledThreadPoolExecutor
      */
@@ -99,7 +98,12 @@ public class ThreadPoolUtils {
         return new ScheduledThreadPoolExecutor(corePoolSize, namedThreadFactory);
     }
 
-
+    /**
+     * 获取线程命名工厂
+     * @param beforeName beforeName 任务前戳
+     * @param daemon daemon 是否为守护线程
+     * @return NamedThreadFactory
+     */
     private static NamedThreadFactory getNamedThreadFactory(String beforeName, boolean daemon) {
         NamedThreadFactory namedThreadFactory = null;
         if ("".equals(beforeName) || beforeName == null) {
@@ -112,7 +116,7 @@ public class ThreadPoolUtils {
 
 
     /***
-     * 线程命名工厂泪
+     * 自定义线程命名工厂
      */
     private static class NamedThreadFactory implements ThreadFactory {
         /**
@@ -171,7 +175,6 @@ public class ThreadPoolUtils {
          * 任务队列
          */
         private BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(10);
-
 
         /**
          * 拒绝策略
