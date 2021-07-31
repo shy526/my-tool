@@ -1,4 +1,4 @@
-package com.github.shy526;
+package com.github.shy526.thread;
 
 
 import java.util.Locale;
