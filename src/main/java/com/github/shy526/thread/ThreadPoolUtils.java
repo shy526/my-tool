@@ -18,7 +18,7 @@ public class ThreadPoolUtils {
      *
      * @return ThreadPoolExecutor
      */
-    public static ThreadPoolExecutor getThreadPool() {
+    public static ExecutorService getThreadPool() {
         return ThreadPoolUtils.getThreadPool(null, null);
     }
 
@@ -28,7 +28,7 @@ public class ThreadPoolUtils {
      * @param threadPoolConfig 属性
      * @return ThreadPoolExecutor
      */
-    public static ThreadPoolExecutor getThreadPool(ThreadPoolConfig threadPoolConfig) {
+    public static ExecutorService getThreadPool(ThreadPoolConfig threadPoolConfig) {
         return ThreadPoolUtils.getThreadPool(null, threadPoolConfig);
     }
 
@@ -38,7 +38,7 @@ public class ThreadPoolUtils {
      * @param beforeName 前戳
      * @return ThreadPoolExecutor
      */
-    public static ThreadPoolExecutor getThreadPool(String beforeName) {
+    public static ExecutorService getThreadPool(String beforeName) {
         return ThreadPoolUtils.getThreadPool(beforeName, null);
     }
 
@@ -50,7 +50,7 @@ public class ThreadPoolUtils {
      * @param threadPoolConfig 线程池配置 为null时自动创建
      * @return ThreadPoolExecutor
      */
-    public static ThreadPoolExecutor getThreadPool(String beforeName, ThreadPoolConfig threadPoolConfig) {
+    public static ExecutorService getThreadPool(String beforeName, ThreadPoolConfig threadPoolConfig) {
         NamedThreadFactory namedThreadFactory = getNamedThreadFactory(beforeName, false);
         if (threadPoolConfig == null) {
             threadPoolConfig = threadPoolConfigBuild();
@@ -66,13 +66,13 @@ public class ThreadPoolUtils {
      * @param beforeName 任务前戳
      * @return ThreadPoolExecutor
      */
-    public static ThreadPoolExecutor getSingleThreadExecutor(String beforeName) {
+    public static ExecutorService getSingleExecutor(String beforeName) {
         ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
         threadPoolConfig.setCorePoolSize(1);
         threadPoolConfig.setMaximumPoolSizeSize(1);
         threadPoolConfig.setKeepAliveTime(0L);
         threadPoolConfig.setWorkQueue(new ArrayBlockingQueue<Runnable>(0));
-        return getThreadPool(beforeName);
+        return getThreadPool(beforeName,threadPoolConfig);
     }
 
 
@@ -83,8 +83,8 @@ public class ThreadPoolUtils {
      * @param corePoolSize 核心线程池数
      * @return ScheduledThreadPoolExecutor
      */
-    public static ScheduledThreadPoolExecutor getScheduledThreadPoolExecutor(String beforeName, int corePoolSize) {
-        return getScheduledThreadPoolExecutor(beforeName, corePoolSize, false);
+    public static ScheduledExecutorService getScheduledExecutor(String beforeName, int corePoolSize) {
+        return getScheduledExecutor(beforeName, corePoolSize, false);
     }
 
     /**
@@ -93,7 +93,7 @@ public class ThreadPoolUtils {
      * @param corePoolSize 核心线程池数
      * @return ScheduledThreadPoolExecutor
      */
-    public static ScheduledThreadPoolExecutor getScheduledThreadPoolExecutor(String beforeName, int corePoolSize, boolean daemon) {
+    public static ScheduledExecutorService getScheduledExecutor(String beforeName, int corePoolSize, boolean daemon) {
         NamedThreadFactory namedThreadFactory = getNamedThreadFactory(beforeName, daemon);
         return new ScheduledThreadPoolExecutor(corePoolSize, namedThreadFactory);
     }
