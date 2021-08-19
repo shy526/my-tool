@@ -71,7 +71,7 @@ public class ThreadPoolUtils {
         threadPoolConfig.setCorePoolSize(1);
         threadPoolConfig.setMaximumPoolSizeSize(1);
         threadPoolConfig.setKeepAliveTime(0L);
-        threadPoolConfig.setWorkQueue(new ArrayBlockingQueue<Runnable>(0));
+        threadPoolConfig.setWorkQueue(new LinkedBlockingQueue<>());
         return getThreadPool(beforeName,threadPoolConfig);
     }
 

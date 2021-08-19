@@ -5,9 +5,9 @@ import java.util.Date;
 
 /**
  * 新旧Date 互相转换类
- * @author ccxh
+ * @author shy526
  */
-public class SwitchDataUtils {
+public class SwitchDateUtils {
     /**
      * java.util.Date --> java.time.LocalDateTime
      * @param date date

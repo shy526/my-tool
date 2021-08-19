@@ -7,7 +7,7 @@ import java.io.Serializable;
 /**
  * controller 统一返回对象
  *
- * @author ccxh
+ * @author shy526
  */
 @Data
 public class WebResult<T> implements Serializable {

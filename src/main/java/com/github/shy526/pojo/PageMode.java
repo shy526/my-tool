@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * 分页模型
  *
- * @author ccxh
+ * @author shy526
  */
 public class PageMode<T> implements Serializable {
     /**
