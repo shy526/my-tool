@@ -30,6 +30,7 @@ public final class DateFormatUtils {
     private final static BlockingQueue<SimpleDateFormat> DATE_DEFAULT_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
     private final static BlockingQueue<SimpleDateFormat> DATE_DATE_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
     private final static BlockingQueue<SimpleDateFormat> DATE_TIME_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+
     static {
         for (int i = 0; i < QUEUE_SIZE; i++) {
             DATE_DEFAULT_FORMAT_QUEUE.add(new SimpleDateFormat(DEFAULT_FORMAT));
@@ -40,6 +41,7 @@ public final class DateFormatUtils {
 
     public static String getFormatString(String format, Date date) {
         SimpleDateFormat result = null;
+        String resultFormat = null;
         BlockingQueue<SimpleDateFormat> blockingQueue = null;
         if (DEFAULT_FORMAT.equals(format)) {
             blockingQueue = DATE_DEFAULT_FORMAT_QUEUE;
@@ -52,8 +54,12 @@ public final class DateFormatUtils {
         }
         if (blockingQueue != null) {
             result = formatQueuePoll(blockingQueue, format);
+            resultFormat = result.format(date);
+            blockingQueue.add(result);
+        } else {
+            resultFormat = result.format(date);
         }
-        return result.format(date);
+        return resultFormat;
     }
 
     public static SimpleDateFormat formatQueuePoll(BlockingQueue<SimpleDateFormat> blockingQueue, String format) {
