@@ -1,10 +1,15 @@
 package com.github.shy526.date;
 
+import javafx.concurrent.Task;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 时间格式化通用
@@ -21,6 +26,45 @@ public final class DateFormatUtils {
     private final static DateTimeFormatter LOCAL_DATE_DEFAULT_FORMAT = DateTimeFormatter.ofPattern(DEFAULT_FORMAT);
     private final static DateTimeFormatter LOCAL_DATE_DATE_FORMAT = DateTimeFormatter.ofPattern(DATE_FORMAT);
     private final static DateTimeFormatter LOCAL_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern(TIME_FORMAT);
+    private final static int QUEUE_SIZE = 20;
+    private final static BlockingQueue<SimpleDateFormat> DATE_DEFAULT_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    private final static BlockingQueue<SimpleDateFormat> DATE_DATE_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    private final static BlockingQueue<SimpleDateFormat> DATE_TIME_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    static {
+        for (int i = 0; i < QUEUE_SIZE; i++) {
+            DATE_DEFAULT_FORMAT_QUEUE.add(new SimpleDateFormat(DEFAULT_FORMAT));
+            DATE_DATE_FORMAT_QUEUE.add(new SimpleDateFormat(DATE_FORMAT));
+            DATE_TIME_FORMAT_QUEUE.add(new SimpleDateFormat(TIME_FORMAT));
+        }
+    }
+
+    public static String getFormatString(String format, Date date) {
+        SimpleDateFormat result = null;
+        BlockingQueue<SimpleDateFormat> blockingQueue = null;
+        if (DEFAULT_FORMAT.equals(format)) {
+            blockingQueue = DATE_DEFAULT_FORMAT_QUEUE;
+        } else if (DATE_FORMAT.equals(format)) {
+            blockingQueue = DATE_DATE_FORMAT_QUEUE;
+        } else if (TIME_FORMAT.equals(format)) {
+            blockingQueue = DATE_TIME_FORMAT_QUEUE;
+        } else {
+            result = new SimpleDateFormat(format);
+        }
+        if (blockingQueue != null) {
+            result = formatQueuePoll(blockingQueue, format);
+        }
+        return result.format(date);
+    }
+
+    public static SimpleDateFormat formatQueuePoll(BlockingQueue<SimpleDateFormat> blockingQueue, String format) {
+        SimpleDateFormat result = null;
+        try {
+            result = blockingQueue.poll(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            result = new SimpleDateFormat(format);
+        }
+        return result;
+    }
 
     /**
      * 转换为默认时间
@@ -29,7 +73,8 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String defaultFormat(Date date) {
-        return DATE_DEFAULT_FORMAT.format(date);
+        return getFormatString(DEFAULT_FORMAT, date);
+
     }
 
     /**
@@ -53,7 +98,7 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String dateFormat(Date date) {
-        return DATE_DATE_FORMAT.format(date);
+        return getFormatString(DATE_FORMAT, date);
     }
 
     /**
@@ -77,7 +122,7 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String timeFormat(Date date) {
-        return DATE_TIME_FORMAT.format(date);
+        return getFormatString(TIME_FORMAT, date);
     }
 
     /**
@@ -149,7 +194,6 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String timeFormat(TemporalAccessor localDateTime) {
-
         return LOCAL_DATE_TIME_FORMAT.format(localDateTime);
     }
 
@@ -164,5 +208,4 @@ public final class DateFormatUtils {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
         return dateTimeFormatter.format(localDateTime);
     }
-
 }
