@@ -39,9 +39,15 @@ public final class DateFormatUtils {
         }
     }
 
+    /**
+     * 获取一个时间格式化的str
+     *
+     * @param format format
+     * @param date   date
+     * @return String
+     */
     public static String getFormatString(String format, Date date) {
         SimpleDateFormat result = null;
-        String resultFormat = null;
         BlockingQueue<SimpleDateFormat> blockingQueue = null;
         if (DEFAULT_FORMAT.equals(format)) {
             blockingQueue = DATE_DEFAULT_FORMAT_QUEUE;
@@ -52,6 +58,8 @@ public final class DateFormatUtils {
         } else {
             result = new SimpleDateFormat(format);
         }
+
+        String resultFormat = null;
         if (blockingQueue != null) {
             result = formatQueuePoll(blockingQueue, format);
             resultFormat = result.format(date);
@@ -62,6 +70,13 @@ public final class DateFormatUtils {
         return resultFormat;
     }
 
+    /**
+     * 从指定队列中获取 SimpleDateFormat 当队列用尽 时创建一个返回
+     *
+     * @param blockingQueue blockingQueue
+     * @param format        format
+     * @return SimpleDateFormat
+     */
     public static SimpleDateFormat formatQueuePoll(BlockingQueue<SimpleDateFormat> blockingQueue, String format) {
         SimpleDateFormat result = null;
         try {
