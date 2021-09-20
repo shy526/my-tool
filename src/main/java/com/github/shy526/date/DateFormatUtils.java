@@ -1,7 +1,5 @@
 package com.github.shy526.date;
 
-import javafx.concurrent.Task;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
@@ -46,7 +44,7 @@ public final class DateFormatUtils {
      * @param date   date
      * @return String
      */
-    public static String getFormatString(String format, Date date) {
+    public static String getFormatStr(String format, Date date) {
         SimpleDateFormat result = null;
         BlockingQueue<SimpleDateFormat> blockingQueue = null;
         if (DEFAULT_FORMAT.equals(format)) {
@@ -94,7 +92,7 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String defaultFormat(Date date) {
-        return getFormatString(DEFAULT_FORMAT, date);
+        return getFormatStr(DEFAULT_FORMAT, date);
 
     }
 
@@ -119,7 +117,7 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String dateFormat(Date date) {
-        return getFormatString(DATE_FORMAT, date);
+        return getFormatStr(DATE_FORMAT, date);
     }
 
     /**
@@ -143,7 +141,7 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String timeFormat(Date date) {
-        return getFormatString(TIME_FORMAT, date);
+        return getFormatStr(TIME_FORMAT, date);
     }
 
     /**
