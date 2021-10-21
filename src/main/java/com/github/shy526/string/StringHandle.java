@@ -1,5 +1,7 @@
 package com.github.shy526.string;
 
+import com.sun.istack.internal.NotNull;
+
 import java.util.regex.Pattern;
 
 /**
@@ -12,20 +14,16 @@ public class StringHandle {
 
     private static final Pattern IP_PATTERN = Pattern.compile("\\b((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\b");
 
-    public static boolean ifPhone(String phone) {
+    public static boolean ifPhone(@NotNull String phone) {
 
         return PHONE_PATTERN.matcher(phone).matches();
     }
 
-    public static boolean ifIp(String ip) {
+    public static boolean ifIp(@NotNull String ip) {
         return IP_PATTERN.matcher(ip).matches();
     }
 
-    public static String phoneHide(String phone) {
+    public static String phoneHide(@NotNull String phone) {
         return phone.replaceAll("(\\d{3})\\d{4}(\\d{4})", "$1****$2");
-    }
-
-    public static void main(String[] args) {
-        System.out.println(ifPhone(null));
     }
 }
