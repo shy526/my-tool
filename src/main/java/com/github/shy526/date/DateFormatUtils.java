@@ -1,5 +1,8 @@
 package com.github.shy526.date;
 
+import com.google.common.base.Strings;
+import lombok.extern.slf4j.Slf4j;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
@@ -14,6 +17,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author shy526
  */
+@Slf4j
 public final class DateFormatUtils {
     /**
      * 通用格式化格式
@@ -49,7 +53,7 @@ public final class DateFormatUtils {
             try {
                 return sdf.parse(obj);
             } catch (ParseException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(),e);
                 return null;
             }
         }
@@ -186,6 +190,7 @@ public final class DateFormatUtils {
      */
     public static String format(TemporalAccessor localDateTime, String format) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
+
         return dateTimeFormatter.format(localDateTime);
     }
 
