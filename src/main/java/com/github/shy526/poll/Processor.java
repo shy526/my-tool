@@ -10,4 +10,5 @@ public interface Processor<T> {
      * @param t t
      */
     void handle(T t);
+
 }

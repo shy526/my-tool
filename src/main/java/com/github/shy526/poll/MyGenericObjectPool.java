@@ -6,13 +6,10 @@ import org.apache.commons.pool2.impl.AbandonedConfig;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
-import javax.script.ScriptEngine;
-import java.util.function.Function;
-
 /**
  * 自定义GenericObjectPool
  *
- * @author Administrator
+ * @author shy26
  */
 @Slf4j
 public class MyGenericObjectPool<T> extends GenericObjectPool<T> {
@@ -28,10 +25,33 @@ public class MyGenericObjectPool<T> extends GenericObjectPool<T> {
         super(factory, config, abandonedConfig);
     }
 
+    /**
+     * 租借对象
+     * @param processor 执行器
+     */
     public void leaseObject(Processor<T> processor) {
         T pooledObject = null;
         try {
             pooledObject = this.borrowObject();
+            processor.handle(pooledObject);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        } finally {
+            if (pooledObject != null) {
+                this.returnObject(pooledObject);
+            }
+        }
+    }
+
+    /**
+     * 租借对象
+     * @param processor 执行器
+     * @param maxWait 最大等待时间
+     */
+    public void leaseObject(Processor<T> processor,Long maxWait) {
+        T pooledObject = null;
+        try {
+            pooledObject = this.borrowObject(maxWait);
             processor.handle(pooledObject);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
