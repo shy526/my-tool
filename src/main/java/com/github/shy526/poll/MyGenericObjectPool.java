@@ -7,6 +7,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import javax.script.ScriptEngine;
+import java.util.function.Function;
 
 /**
  * 自定义GenericObjectPool

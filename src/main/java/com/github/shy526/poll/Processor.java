@@ -7,7 +7,7 @@ package com.github.shy526.poll;
 public interface Processor<T> {
     /**
      * 处理
-     * @param t
+     * @param t t
      */
     void handle(T t);
 }
