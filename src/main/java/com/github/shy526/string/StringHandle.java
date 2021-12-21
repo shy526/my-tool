@@ -15,11 +15,11 @@ public class StringHandle {
 
     private static final Pattern IP_PATTERN = Pattern.compile("\\b((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\.((?!\\d\\d\\d)\\d+|1\\d\\d|2[0-4]\\d|25[0-5])\\b");
 
-    public static boolean ifPhone(String phone) {
+    public static boolean assertPhone(String phone) {
         return PHONE_PATTERN.matcher(phone).matches();
     }
 
-    public static boolean ifIp(String ip) {
+    public static boolean assertIp(String ip) {
         return IP_PATTERN.matcher(ip).matches();
     }
 

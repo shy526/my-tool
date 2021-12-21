@@ -1,15 +1,16 @@
 package com.github.shy526.date;
 
+import com.github.shy526.poll.SimpleGenericObjPool;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 时间格式化通用
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * @author shy526
  */
 @Slf4j
-public final class DateFormatUtils {
+public final class DateFormat {
     /**
      * 通用格式化格式
      */
@@ -26,12 +27,11 @@ public final class DateFormatUtils {
     public final static String TIME_FORMAT = "HH:mm:ss";
 
     /**
-     * 提供时间与字符串转换的队列
+     * 旧时间 类型转换的线程池
      */
-    private final static int QUEUE_SIZE = Runtime.getRuntime().availableProcessors() + 1;
-    private final static BlockingQueue<SimpleDateFormat> DATE_DEFAULT_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
-    private final static BlockingQueue<SimpleDateFormat> DATE_DATE_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
-    private final static BlockingQueue<SimpleDateFormat> DATE_TIME_FORMAT_QUEUE = new ArrayBlockingQueue<>(QUEUE_SIZE);
+    private final static SimpleGenericObjPool<SimpleDateFormat> DEFAULT_FORMAT_POLL = new SimpleGenericObjPool<>(() -> new SimpleDateFormat(DEFAULT_FORMAT));
+    private final static SimpleGenericObjPool<SimpleDateFormat> DATE_FORMAT_POLL = new SimpleGenericObjPool<>(() -> new SimpleDateFormat(DATE_FORMAT));
+    private final static SimpleGenericObjPool<SimpleDateFormat> TIME_FORMAT_POLL = new SimpleGenericObjPool<>(() -> new SimpleDateFormat(TIME_FORMAT));
 
     /**
      * 新时间格式转化
@@ -39,32 +39,6 @@ public final class DateFormatUtils {
     private final static DateTimeFormatter LOCAL_DATE_DEFAULT_FORMAT = DateTimeFormatter.ofPattern(DEFAULT_FORMAT);
     private final static DateTimeFormatter LOCAL_DATE_DATE_FORMAT = DateTimeFormatter.ofPattern(DATE_FORMAT);
     private final static DateTimeFormatter LOCAL_TIME_FORMAT = DateTimeFormatter.ofPattern(TIME_FORMAT);
-
-    private final static AbstractProcessor<Date, String> FORMAT_PROCESSOR = new AbstractProcessor<Date, String>() {
-        @Override
-        protected String handle(Date obj, SimpleDateFormat sdf) {
-            return sdf.format(obj);
-        }
-    };
-    private final static AbstractProcessor<String, Date> PARSE_PROCESSOR = new AbstractProcessor<String, Date>() {
-        @Override
-        protected Date handle(String obj, SimpleDateFormat sdf) {
-            try {
-                return sdf.parse(obj);
-            } catch (ParseException e) {
-                log.error(e.getMessage(),e);
-                return null;
-            }
-        }
-    };
-
-    static {
-        for (int i = 0; i < QUEUE_SIZE; i++) {
-            DATE_DEFAULT_FORMAT_QUEUE.add(new SimpleDateFormat(DEFAULT_FORMAT));
-            DATE_DATE_FORMAT_QUEUE.add(new SimpleDateFormat(DATE_FORMAT));
-            DATE_TIME_FORMAT_QUEUE.add(new SimpleDateFormat(TIME_FORMAT));
-        }
-    }
 
 
     /**
@@ -75,7 +49,6 @@ public final class DateFormatUtils {
      */
     public static String defaultFormat(Date date) {
         return format(date, DEFAULT_FORMAT);
-
     }
 
     /**
@@ -136,7 +109,34 @@ public final class DateFormatUtils {
      * @return String
      */
     public static String format(Date date, String format) {
-        return FORMAT_PROCESSOR.run(date, format);
+        SimpleGenericObjPool<SimpleDateFormat> poll = matePoll(format);
+        String result = null;
+        if (poll != null) {
+            result = poll.leaseObject(item -> {
+                return item.format(date);
+            });
+        } else {
+            result = new SimpleDateFormat(format).format(date);
+        }
+        return result;
+    }
+
+    /**
+     * 匹配对应的线程池对象
+     *
+     * @param format format
+     * @return MyGenericObjectPool<SimpleDateFormat>
+     */
+    private static SimpleGenericObjPool<SimpleDateFormat> matePoll(String format) {
+        SimpleGenericObjPool<SimpleDateFormat> result = null;
+        if (DEFAULT_FORMAT.equals(format)) {
+            result = DEFAULT_FORMAT_POLL;
+        } else if (DATE_FORMAT.equals(format)) {
+            result = DATE_FORMAT_POLL;
+        } else if (TIME_FORMAT.equals(format)) {
+            result = TIME_FORMAT_POLL;
+        }
+        return result;
     }
 
     /**
@@ -147,7 +147,26 @@ public final class DateFormatUtils {
      * @return Date
      */
     public static Date parse(String dataStr, String format) {
-        return PARSE_PROCESSOR.run(dataStr, format);
+        SimpleGenericObjPool<SimpleDateFormat> poll = matePoll(format);
+        Date result = null;
+        if (poll != null) {
+            result = poll.leaseObject(item -> {
+                Date date = null;
+                try {
+                    date = item.parse(dataStr);
+                } catch (ParseException e) {
+                    log.error(e.getMessage(), e);
+                }
+                return date;
+            });
+        } else {
+            try {
+                result = new SimpleDateFormat(format).parse(dataStr);
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        return result;
     }
 
     /**
@@ -189,46 +208,7 @@ public final class DateFormatUtils {
      */
     public static String format(TemporalAccessor localDateTime, String format) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(format);
-
         return dateTimeFormatter.format(localDateTime);
     }
 
-    static abstract class AbstractProcessor<J, T> {
-        public T run(J obj, String format) {
-            T result = null;
-            BlockingQueue<SimpleDateFormat> blockingQueue = null;
-            if (DEFAULT_FORMAT.equals(format)) {
-                blockingQueue = DATE_DEFAULT_FORMAT_QUEUE;
-            } else if (DATE_FORMAT.equals(format)) {
-                blockingQueue = DATE_DATE_FORMAT_QUEUE;
-            } else if (TIME_FORMAT.equals(format)) {
-                blockingQueue = DATE_TIME_FORMAT_QUEUE;
-            }
-            SimpleDateFormat sdf = null;
-            if (blockingQueue != null) {
-                try {
-                    sdf = blockingQueue.poll(100, TimeUnit.MILLISECONDS);
-                } catch (Exception e) {
-                    sdf = new SimpleDateFormat(format);
-                }
-                result = handle(obj, sdf);
-                blockingQueue.offer(sdf);
-
-            } else {
-                sdf = new SimpleDateFormat(format);
-                result = handle(obj, sdf);
-            }
-            return result;
-        }
-
-        /**
-         * 处理方法
-         *
-         * @param obj              obj
-         * @param sdf simpleDateFormat
-         * @return T
-         */
-        protected abstract T handle(J obj, SimpleDateFormat sdf);
-
-    }
 }
