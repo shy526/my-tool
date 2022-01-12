@@ -34,6 +34,6 @@ public class GatherUtils {
      * @return boolean
      */
     public static boolean isEmpty(Object[] array) {
-        return array == null || array.length > 0;
+        return array == null || array.length == 0;
     }
 }
