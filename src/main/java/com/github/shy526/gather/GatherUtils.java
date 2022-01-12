@@ -1,4 +1,4 @@
-package com.github.gather;
+package com.github.shy526.gather;
 
 import java.util.Collection;
 import java.util.Map;
