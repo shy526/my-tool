@@ -1,14 +1,11 @@
 package com.github.shy526.date;
 
 import com.github.shy526.poll.SimpleGenericObjPool;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.pool2.BasePooledObjectFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
 import java.util.Date;
 
@@ -17,7 +14,6 @@ import java.util.Date;
  *
  * @author shy526
  */
-@Slf4j
 public final class DateFormat {
     /**
      * 通用格式化格式
@@ -155,7 +151,7 @@ public final class DateFormat {
                 try {
                     date = item.parse(dataStr);
                 } catch (ParseException e) {
-                    log.error(e.getMessage(), e);
+                    throw new RuntimeException(e);
                 }
                 return date;
             });
@@ -163,7 +159,7 @@ public final class DateFormat {
             try {
                 result = new SimpleDateFormat(format).parse(dataStr);
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                throw new RuntimeException(e);
             }
         }
         return result;

@@ -1,6 +1,5 @@
 package com.github.shy526.http;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -19,7 +18,6 @@ import java.util.Map;
  *
  * @author shy526
  */
-@Slf4j
 public class HttpClientService {
     private final CloseableHttpClient httpClient;
 

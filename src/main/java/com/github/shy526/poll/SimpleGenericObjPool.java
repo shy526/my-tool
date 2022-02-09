@@ -1,6 +1,5 @@
 package com.github.shy526.poll;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.PooledObjectFactory;
 import org.apache.commons.pool2.impl.AbandonedConfig;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -15,7 +14,6 @@ import java.util.function.Supplier;
  *
  * @author shy26
  */
-@Slf4j
 public class SimpleGenericObjPool<T> extends GenericObjectPool<T> {
 
 
@@ -55,7 +53,7 @@ public class SimpleGenericObjPool<T> extends GenericObjectPool<T> {
             pooledObject = this.borrowObject();
             processor.accept(pooledObject);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         } finally {
             if (pooledObject != null) {
                 this.returnObject(pooledObject);
@@ -77,7 +75,7 @@ public class SimpleGenericObjPool<T> extends GenericObjectPool<T> {
             pooledObject = this.borrowObject();
             result = processor.apply(pooledObject);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         } finally {
             if (pooledObject != null) {
                 this.returnObject(pooledObject);
@@ -98,7 +96,7 @@ public class SimpleGenericObjPool<T> extends GenericObjectPool<T> {
             pooledObject = this.borrowObject(maxWait);
             processor.accept(pooledObject);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         } finally {
             if (pooledObject != null) {
                 this.returnObject(pooledObject);
@@ -122,7 +120,7 @@ public class SimpleGenericObjPool<T> extends GenericObjectPool<T> {
             pooledObject = this.borrowObject(maxWait);
             result = processor.apply(pooledObject);
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new RuntimeException(e);
         } finally {
             if (pooledObject != null) {
                 this.returnObject(pooledObject);
