@@ -18,7 +18,6 @@ import java.io.IOException;
  *
  * @author shy526
  */
-@Slf4j
 public class HttpResult implements Closeable {
     @Getter
     private Integer httpStatus = 0;
@@ -33,12 +32,12 @@ public class HttpResult implements Closeable {
     public HttpResult() {
     }
 
-    public HttpResult(Exception error,HttpRequestBase request ) {
+    public HttpResult(Exception error, HttpRequestBase request) {
         this.error = error;
         this.request = request;
     }
 
-    public HttpResult(CloseableHttpResponse response,HttpRequestBase request) {
+    public HttpResult(CloseableHttpResponse response, HttpRequestBase request) {
         this.response = response;
         this.request = request;
         if (this.response != null) {
@@ -55,11 +54,11 @@ public class HttpResult implements Closeable {
     public String getEntityStr(String encode) {
         try {
             if (httpStatus.equals(HttpStatus.SC_OK) && StringUtils.isEmpty(this.entityStr)) {
-                 HttpEntity entity = this.response.getEntity();
-                this.entityStr =entity==null?null: EntityUtils.toString(entity, encode);
+                HttpEntity entity = this.response.getEntity();
+                this.entityStr = entity == null ? null : EntityUtils.toString(entity, encode);
             }
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new HttpException(e);
         }
         consume();
         return this.entityStr;
@@ -74,6 +73,7 @@ public class HttpResult implements Closeable {
             try {
                 EntityUtils.consume(httpEntity);
             } catch (IOException e) {
+                throw new HttpException(e);
             } finally {
                 httpEntity = null;
             }
@@ -86,6 +86,7 @@ public class HttpResult implements Closeable {
             try {
                 response.close();
             } catch (IOException e) {
+                throw new HttpException(e);
             } finally {
                 response = null;
             }

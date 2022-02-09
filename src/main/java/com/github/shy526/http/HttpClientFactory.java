@@ -59,9 +59,8 @@ public class HttpClientFactory {
             HostnameVerifier hostnameVerifier = NoopHostnameVerifier.INSTANCE;
             return new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new HttpException(e);
         }
-        return null;
     }
 
     public static CloseableHttpClient getHttpClient(HttpClientProperties properties) {

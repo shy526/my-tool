@@ -1,6 +1,5 @@
 package com.github.shy526.http;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
@@ -22,7 +21,6 @@ import java.util.Map;
  *
  * @author Administrator
  */
-@Slf4j
 public class RequestPack {
     private static final String DEFAULT_ENCODING = "UTF-8";
 
@@ -60,7 +58,6 @@ public class RequestPack {
             return this;
         }
         if (!(requestBase instanceof HttpEntityEnclosingRequestBase)) {
-            log.error("request type error");
             return this;
         }
         if (encode == null || "".equals(encode.trim())) {
@@ -72,7 +69,7 @@ public class RequestPack {
         try {
             ((HttpEntityEnclosingRequestBase) requestBase).setEntity(new UrlEncodedFormEntity(parameters, encode));
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new HttpException(e);
         }
 
         return this;
@@ -83,13 +80,12 @@ public class RequestPack {
             return this;
         }
         if (!(requestBase instanceof HttpEntityEnclosingRequestBase)) {
-            log.error("request type error");
             return this;
         }
         try {
             ((HttpEntityEnclosingRequestBase) requestBase).setEntity(new StringEntity(str));
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new HttpException(e);
         }
         return this;
     }
@@ -116,7 +112,7 @@ public class RequestPack {
             params.forEach(builder::setParameter);
             url = builder.build().toString();
         } catch (URISyntaxException e) {
-            log.error(e.getMessage(), e);
+            throw new HttpException(e);
         }
         return url;
     }
@@ -156,7 +152,7 @@ public class RequestPack {
             Constructor<? extends HttpRequestBase> constructor = tclass.getConstructor(String.class);
             httpRequestBase = constructor.newInstance(buildUrlParams(url, params));
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            throw new HttpException(e);
         }
         return new RequestPack(httpRequestBase);
     }

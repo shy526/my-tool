@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
  *
  * @author shy526
  */
-@Slf4j
 public class CloseExpiredConnectionsTask implements Runnable {
     private final HttpClientConnectionManager manager;
     private final HttpClientProperties.CloseTask closeTask;
@@ -29,7 +28,6 @@ public class CloseExpiredConnectionsTask implements Runnable {
                 .scheduleWithFixedDelay(new CloseExpiredConnectionsTask(httpClientConnectionManager, closeTask),
                         INITIAL_DELAY, closeTask.getDelay()
                         , TimeUnit.MILLISECONDS);
-        log.info("start close connections:{}-->{}", closeTask.getDelay(), closeTask.getIdleTime());
     }
 
     @Override
@@ -38,7 +36,6 @@ public class CloseExpiredConnectionsTask implements Runnable {
         manager.closeExpiredConnections();
         //不活动的连接
         manager.closeIdleConnections(closeTask.getIdleTime(), TimeUnit.MILLISECONDS);
-        log.debug("{}-->{}", closeTask.getDelay(), closeTask.getIdleTime());
     }
 }
 

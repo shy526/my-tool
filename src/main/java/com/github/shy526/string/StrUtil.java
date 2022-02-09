@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  *
  * @author shy526
  */
-public class StringHandle {
+public class StrUtil {
 
     private static final Pattern PHONE_PATTERN = Pattern.compile("^((13[0-9])|(15[^4,\\D])|(17[0-9])|(18[0-9]))\\d{8}$");
 

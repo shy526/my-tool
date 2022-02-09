@@ -172,18 +172,7 @@ public class HttpClientService {
      * @return HttpResult
      */
     public HttpResult execute(RequestPack requestPack) {
-        return execute(requestPack, true);
-    }
-
-    /**
-     * 执行提交
-     *
-     * @param requestPack requestPack
-     * @param logFlag     logFlag
-     * @return HttpResult
-     */
-    public HttpResult execute(RequestPack requestPack, boolean logFlag) {
-        return execute(requestPack.getRequestBase(), logFlag);
+        return execute(requestPack.getRequestBase());
     }
 
 
@@ -191,25 +180,14 @@ public class HttpClientService {
      * 执行提交
      *
      * @param requestBase requestBase
-     * @param logFlag     logFlag
      * @return HttpResult
      */
-    public HttpResult execute(HttpRequestBase requestBase, boolean logFlag) {
+    public HttpResult execute(HttpRequestBase requestBase) {
         HttpResult result = null;
         try {
-            if (log.isDebugEnabled()) {
-                long startTime = System.currentTimeMillis();
-                result = new HttpResult(httpClient.execute(requestBase),requestBase);
-                log.debug("{}:{}({}ms)---->{} ", requestBase.getMethod(), result.getHttpStatus(), System.currentTimeMillis() - startTime,
-                        requestBase.getURI());
-            } else {
-                result = new HttpResult(httpClient.execute(requestBase),requestBase);
-            }
+            result = new HttpResult(httpClient.execute(requestBase), requestBase);
         } catch (Exception e) {
-            result = new HttpResult(e,requestBase);
-            if (logFlag) {
-                log.error(e.getMessage(), e);
-            }
+            throw new HttpException(e);
         }
         return result;
     }
@@ -230,7 +208,7 @@ public class HttpClientService {
         try {
             multipartEntityBuilder.addBinaryBody(fileUpLoadName, new FileInputStream(file), ContentType.MULTIPART_FORM_DATA, file.getName());
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new HttpException(e);
         }
         return multipartEntityBuilder;
     }
