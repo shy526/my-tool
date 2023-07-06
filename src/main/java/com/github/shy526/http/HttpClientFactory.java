@@ -1,6 +1,10 @@
 package com.github.shy526.http;
 
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -33,8 +37,11 @@ public class HttpClientFactory {
     }
 
     public static PoolingHttpClientConnectionManager getHttpClientConnectionManager(HttpClientProperties properties) {
-
-        PoolingHttpClientConnectionManager httpClientConnectionManager = new PoolingHttpClientConnectionManager();
+        Registry<ConnectionSocketFactory> registry = RegistryBuilder.
+                <ConnectionSocketFactory>create()
+                .register("http", PlainConnectionSocketFactory.getSocketFactory())
+                .register("https", getSslConnectionSocketFactory()).build();
+        PoolingHttpClientConnectionManager httpClientConnectionManager = new PoolingHttpClientConnectionManager(registry);
         //最大连接数
         httpClientConnectionManager.setMaxTotal(properties.getMaxTotal());
         //并发数

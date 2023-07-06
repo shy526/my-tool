@@ -1,5 +1,9 @@
 package com.github.shy526.date;
 
+import com.github.shy526.http.HttpClientFactory;
+import com.github.shy526.http.HttpClientProperties;
+import com.github.shy526.http.HttpClientService;
+import com.github.shy526.http.HttpResult;
 import org.junit.Test;
 
 import java.util.Date;
@@ -27,5 +31,18 @@ public class DateFormatTest {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+
+
+    @Test
+    public void http(){
+        HttpClientProperties httpClientProperties = new HttpClientProperties();
+        HttpClientService httpClientService = HttpClientFactory.getHttpClientService(httpClientProperties);
+        String url="https://steamcommunity.com/market/listings/570/Exalted%20Demon%20Eater";
+        HttpResult httpResult = httpClientService.get(url);
+        String entityStr = httpResult.getEntityStr();
+        System.out.println("entityStr = " + entityStr);
+
     }
 }
