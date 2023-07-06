@@ -185,7 +185,7 @@ public class HttpClientService {
         try {
             result = new HttpResult(httpClient.execute(requestBase), requestBase);
         } catch (Exception e) {
-            throw new HttpException(e);
+            throw new HttpException(e.getMessage(),e);
         }
         return result;
     }
