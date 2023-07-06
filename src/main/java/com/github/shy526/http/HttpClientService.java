@@ -211,4 +211,7 @@ public class HttpClientService {
         return multipartEntityBuilder;
     }
 
+    public RequestConfig getRequestConfig() {
+        return requestConfig;
+    }
 }
