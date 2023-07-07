@@ -1,13 +1,16 @@
 package com.github.shy526.http;
 
+import org.apache.commons.codec.CharEncoding;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
@@ -21,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.commons.codec.CharEncoding.UTF_8;
+
 /**
  * request 包装
  *
@@ -29,15 +34,20 @@ import java.util.Map;
 public class RequestPack {
 
 
-    public HttpClientContext getContext() {
-        return context;
-    }
-
-    private static final String DEFAULT_ENCODING = "UTF-8";
+    private HttpHost proxy;
 
     private final HttpRequestBase requestBase;
 
     private HttpClientContext context;
+
+    public HttpHost getProxy() {
+        return proxy;
+    }
+
+    public HttpClientContext getContext() {
+        return context;
+    }
+
     public HttpRequestBase getRequestBase() {
         return requestBase;
     }
@@ -75,7 +85,7 @@ public class RequestPack {
             return this;
         }
         if (encode == null || "".equals(encode.trim())) {
-            encode = DEFAULT_ENCODING;
+            encode = CharEncoding.UTF_8;
         }
         List<NameValuePair> parameters = new ArrayList<>(format.size());
         format.forEach((k, v) -> parameters.add(new BasicNameValuePair(k, v)));
@@ -138,16 +148,14 @@ public class RequestPack {
      * @param hostPort      代理主机名
      * @param scheme          代理端口
      * @param userPas        代理端口
-     * @param requestConfig requestConfig null 时使用requestBase.getConfig()
      * @return Message
      */
-    public RequestPack setProxy(String hostPort, String scheme,String userPas, RequestConfig requestConfig) {
+    public RequestPack setProxy(String hostPort, String scheme,String userPas) {
         String[] temp = hostPort.split(":");
         String hostName=temp[0];
         Integer port =Integer.parseInt(temp[1]);
         scheme=scheme==null?"http":scheme;
-        HttpHost proxy = new HttpHost(hostName, port,scheme);
-
+         this.proxy = new HttpHost(hostName, port,scheme);
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
          temp = userPas.split(":");
         String userName =temp[0];
@@ -155,13 +163,6 @@ public class RequestPack {
         credsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(userName,password));
         context=HttpClientContext.create();
         context.setAttribute("http.auth.credentials-provider", credsProvider);
-        RequestConfig.Builder configBuilder = null;
-        if (requestConfig == null) {
-            configBuilder = RequestConfig.custom();
-        } else {
-            configBuilder = RequestConfig.copy(requestConfig);
-        }
-        requestBase.setConfig(configBuilder.setProxy(proxy).build());
         return this;
     }
 

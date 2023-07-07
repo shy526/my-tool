@@ -15,6 +15,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
+import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,10 +62,10 @@ public class HttpClientFactory {
      */
     public static SSLConnectionSocketFactory getSslConnectionSocketFactory() {
         try {
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
             SSLContext sslContext = new SSLContextBuilder()
                     .loadTrustMaterial(null, (X509Certificate[] chain, String authType) -> true).build();
-            HostnameVerifier hostnameVerifier = NoopHostnameVerifier.INSTANCE;
-            return new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
+            return  new SSLConnectionSocketFactory(sslContext, new String[]{"SSLv2Hello", "SSLv3", "TLSv1", "TLSv1.2"}, null, NoopHostnameVerifier.INSTANCE);
         } catch (Exception e) {
             throw new HttpException(e);
         }

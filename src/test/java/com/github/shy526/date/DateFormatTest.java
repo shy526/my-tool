@@ -1,9 +1,6 @@
 package com.github.shy526.date;
 
-import com.github.shy526.http.HttpClientFactory;
-import com.github.shy526.http.HttpClientProperties;
-import com.github.shy526.http.HttpClientService;
-import com.github.shy526.http.HttpResult;
+import com.github.shy526.http.*;
 import org.apache.http.*;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthState;
@@ -71,37 +68,20 @@ public class DateFormatTest {
         build.getState().setProxyCredentials(AuthScope.ANY, creds);
        "ww2y8b", "jEKeFf4K"
 */
-        String result = "";
-        CloseableHttpClient httpclient = null;
-        CloseableHttpResponse res = null;
-        try {
-            HttpClientContext context = HttpClientContext.create();
+        for (int i = 0; i < 100;i++){
+            try {
+                HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
+                HttpResult httpResult = httpClientService.get("http://www.857ip.cn/getIP/txt/admin/admin/1");
+                String entityStr = httpResult.getEntityStr();
+                String[] hostPorts = entityStr.split("\n");
+                System.out.println("hostPorts = " + hostPorts[0]);
 
-            // 创建一个httpClient对象
-            //登陆 从配置文件中读取url(也可以写成参数)
-            HttpGet httpPost = new HttpGet("https://steamcommunity.com/market/listings/730/AK-47%20%7C%20Head%20Shot%20(Minimal%20Wear)");
-
-            // 设置代理HttpHost115.207.63.114:40048
-            HttpHost proxy = new HttpHost("1.195.202.223", 40022,"https");
-            // 设置认证
-      
-            httpclient=HttpClients.custom().setSSLSocketFactory(HttpClientFactory.getSslConnectionSocketFactory()).build();
-            RequestConfig config = RequestConfig.custom().setProxy(proxy)
-                    .setSocketTimeout(2 * 1000)
-                    .setConnectTimeout(2 * 1000)
-                    .setConnectionRequestTimeout(2 * 1000)
-                    .build();
-            // 设置参数
-            httpPost.setConfig(config);
-            // 得到响应状态码
-            res = httpclient.execute(httpPost,context);
-            //  获取返回对象
-            HttpEntity entity = res.getEntity();
-            // 通过EntityUtils获取返回结果内容
-            result = EntityUtils.toString(entity);
-            System.out.println( res.getStatusLine());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+                RequestPack requestPack = RequestPack.produce("https://store.steampowered.com/", null, HttpGet.class).setProxy(hostPorts[0], "http", "ww2y8b:jEKeFf4K");
+                HttpResult result = httpClientService.execute(requestPack);
+                System.out.println(result.getHttpStatus());
+            }catch (Exception e){
+                System.out.println( e.getMessage());
+            }
         }
     }
 }

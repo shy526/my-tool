@@ -1,5 +1,6 @@
 package com.github.shy526.http;
 
+import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -40,8 +41,7 @@ public class HttpClientService {
      * @return HttpResult
      */
     public HttpResult get(String url, Map<String, String> params, Map<String, String> header) {
-        RequestPack requestPack = RequestPack.produce(url, params, HttpGet.class)
-                .setRequestConfig(this.requestConfig).setHeader(header);
+        RequestPack requestPack = RequestPack.produce(url, params, HttpGet.class).setHeader(header);
         return this.execute(requestPack);
     }
 
@@ -78,7 +78,7 @@ public class HttpClientService {
      */
     public HttpResult post(String url, Map<String, String> params, Map<String, String> header,
                            Map<String, String> format, String encode, String bodyStr) {
-        RequestPack requestPack = RequestPack.produce(url, params, HttpPost.class).setRequestConfig(requestConfig).setFormat(format, encode)
+        RequestPack requestPack = RequestPack.produce(url, params, HttpPost.class).setFormat(format, encode)
                 .setHeader(header).setBodyStr(bodyStr);
         return execute(requestPack);
     }
@@ -172,6 +172,14 @@ public class HttpClientService {
      * @return HttpResult
      */
     public HttpResult execute(RequestPack requestPack) {
+        HttpHost proxy = requestPack.getProxy();
+        if (proxy==null){
+            requestPack.setRequestConfig(this.requestConfig);
+        }else {
+            RequestConfig.Builder reqConfigBuilder = RequestConfig.copy(requestConfig);
+            reqConfigBuilder.setProxy(proxy);
+            requestPack.setRequestConfig(reqConfigBuilder.build());
+        }
         HttpClientContext context = requestPack.getContext();
         HttpRequestBase requestBase = requestPack.getRequestBase();
         if (context==null){
@@ -210,6 +218,7 @@ public class HttpClientService {
         try {
             result = new HttpResult(httpClient.execute(requestBase,context), requestBase);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new HttpException(e.getMessage(),e);
         }
         return result;
