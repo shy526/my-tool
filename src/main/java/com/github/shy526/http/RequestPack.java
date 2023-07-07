@@ -2,12 +2,17 @@ package com.github.shy526.http;
 
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.lang.reflect.Constructor;
@@ -22,10 +27,17 @@ import java.util.Map;
  * @author Administrator
  */
 public class RequestPack {
+
+
+    public HttpClientContext getContext() {
+        return context;
+    }
+
     private static final String DEFAULT_ENCODING = "UTF-8";
 
     private final HttpRequestBase requestBase;
 
+    private HttpClientContext context;
     public HttpRequestBase getRequestBase() {
         return requestBase;
     }
@@ -45,6 +57,8 @@ public class RequestPack {
         header.forEach(requestBase::setHeader);
         return this;
     }
+
+
 
     /**
      * 生成表单
@@ -121,16 +135,29 @@ public class RequestPack {
     /**
      * 生成使用代理的设置代理
      *
-     * @param hostName      代理主机名
-     * @param port          代理端口
+     * @param hostPort      代理主机名
+     * @param scheme          代理端口
+     * @param userPas        代理端口
      * @param requestConfig requestConfig null 时使用requestBase.getConfig()
      * @return Message
      */
-    public RequestPack setProxy(String hostName, Integer port, RequestConfig requestConfig) {
-        HttpHost proxy = new HttpHost(hostName, port);
+    public RequestPack setProxy(String hostPort, String scheme,String userPas, RequestConfig requestConfig) {
+        String[] temp = hostPort.split(":");
+        String hostName=temp[0];
+        Integer port =Integer.parseInt(temp[1]);
+        scheme=scheme==null?"http":scheme;
+        HttpHost proxy = new HttpHost(hostName, port,scheme);
+
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+         temp = userPas.split(":");
+        String userName =temp[0];
+        String password =temp[1];
+        credsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(userName,password));
+        context=HttpClientContext.create();
+        context.setAttribute("http.auth.credentials-provider", credsProvider);
         RequestConfig.Builder configBuilder = null;
         if (requestConfig == null) {
-            configBuilder = RequestConfig.copy(requestBase.getConfig());
+            configBuilder = RequestConfig.custom();
         } else {
             configBuilder = RequestConfig.copy(requestConfig);
         }

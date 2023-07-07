@@ -4,9 +4,11 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.protocol.HttpContext;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -170,7 +172,14 @@ public class HttpClientService {
      * @return HttpResult
      */
     public HttpResult execute(RequestPack requestPack) {
-        return execute(requestPack.getRequestBase());
+        HttpClientContext context = requestPack.getContext();
+        HttpRequestBase requestBase = requestPack.getRequestBase();
+        if (context==null){
+            return execute(requestBase);
+        }else {
+            return  execute(requestBase,context);
+        }
+
     }
 
 
@@ -184,6 +193,22 @@ public class HttpClientService {
         HttpResult result = null;
         try {
             result = new HttpResult(httpClient.execute(requestBase), requestBase);
+        } catch (Exception e) {
+            throw new HttpException(e.getMessage(),e);
+        }
+        return result;
+    }
+
+    /**
+     * 执行提交
+     *
+     * @param requestBase requestBase
+     * @return HttpResult
+     */
+    public HttpResult execute(HttpRequestBase requestBase, HttpContext context) {
+        HttpResult result = null;
+        try {
+            result = new HttpResult(httpClient.execute(requestBase,context), requestBase);
         } catch (Exception e) {
             throw new HttpException(e.getMessage(),e);
         }
