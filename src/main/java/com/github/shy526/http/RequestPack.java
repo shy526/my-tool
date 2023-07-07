@@ -69,7 +69,6 @@ public class RequestPack {
     }
 
 
-
     /**
      * 生成表单
      *
@@ -145,24 +144,27 @@ public class RequestPack {
     /**
      * 生成使用代理的设置代理
      *
-     * @param hostPort      代理主机名
-     * @param scheme          代理端口
-     * @param userPas        代理端口
+     * @param hostPort 代理主机名
+     * @param scheme   代理端口
+     * @param userPas  代理端口
      * @return Message
      */
-    public RequestPack setProxy(String hostPort, String scheme,String userPas) {
+    public RequestPack setProxy(String hostPort, String scheme, String userPas) {
         String[] temp = hostPort.split(":");
-        String hostName=temp[0];
-        Integer port =Integer.parseInt(temp[1]);
-        scheme=scheme==null?"http":scheme;
-         this.proxy = new HttpHost(hostName, port,scheme);
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-         temp = userPas.split(":");
-        String userName =temp[0];
-        String password =temp[1];
-        credsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(userName,password));
-        context=HttpClientContext.create();
-        context.setAttribute("http.auth.credentials-provider", credsProvider);
+        String hostName = temp[0];
+        Integer port = Integer.parseInt(temp[1]);
+        scheme = scheme == null ? "http" : scheme;
+        this.proxy = new HttpHost(hostName, port, scheme);
+        if (userPas != null) {
+            CredentialsProvider credsProvider = new BasicCredentialsProvider();
+            temp = userPas.split(":");
+            String userName = temp[0];
+            String password = temp[1];
+            credsProvider.setCredentials(new AuthScope(proxy), new UsernamePasswordCredentials(userName, password));
+            context = HttpClientContext.create();
+            context.setAttribute("http.auth.credentials-provider", credsProvider);
+        }
+
         return this;
     }
 
