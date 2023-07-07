@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class DateFormatTest {
 
@@ -68,7 +69,7 @@ public class DateFormatTest {
         build.getState().setProxyCredentials(AuthScope.ANY, creds);
        "ww2y8b", "jEKeFf4K"
 */
-        for (int i = 0; i < 100;i++){
+        for (;;){
             try {
                 HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
                 HttpResult httpResult = httpClientService.get("http://www.857ip.cn/getIP/txt/admin/admin/1");
@@ -76,12 +77,19 @@ public class DateFormatTest {
                 String[] hostPorts = entityStr.split("\n");
                 System.out.println("hostPorts = " + hostPorts[0]);
 
-                RequestPack requestPack = RequestPack.produce("https://store.steampowered.com/", null, HttpGet.class).setProxy(hostPorts[0], "http", "ww2y8b:jEKeFf4K");
+                RequestPack requestPack = RequestPack.produce("https://steamcommunity.com/market/listings/570/Lycosidae%27s%20Favor", null, HttpGet.class).setProxy(hostPorts[0], "http", "ww2y8b:jEKeFf4K");
                 HttpResult result = httpClientService.execute(requestPack);
                 System.out.println(result.getHttpStatus());
-            }catch (Exception e){
-                System.out.println( e.getMessage());
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
+            try {
+                TimeUnit.SECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }
+
+
     }
 }
