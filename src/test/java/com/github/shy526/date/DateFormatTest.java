@@ -77,7 +77,7 @@ public class DateFormatTest {
                 String[] hostPorts = entityStr.split("\n");
                 System.out.println("hostPorts = " + hostPorts[0]);
 
-                RequestPack requestPack = RequestPack.produce("https://steamcommunity.com/market/listings/570/Lycosidae%27s%20Favor", null, HttpGet.class).setProxy(hostPorts[0], "http", "ww2y8b:jEKeFf4K");
+                RequestPack requestPack = RequestPack.produce("https://tarkov-market.com/api/be/hideout", null, HttpGet.class).setProxy(hostPorts[0], "http", "ww2y8b:dni2DfeH");
                 HttpResult result = httpClientService.execute(requestPack);
                 System.out.println(result.getHttpStatus());
             } catch (Exception e) {
