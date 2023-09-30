@@ -202,6 +202,7 @@ public class HttpClientService {
         try {
             result = new HttpResult(httpClient.execute(requestBase), requestBase);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new HttpException(e.getMessage(),e);
         }
         return result;
@@ -227,7 +228,7 @@ public class HttpClientService {
 
     /**
      * 上传文件
-     *
+     *不要加请求头 Content-Type
      * @param fileUpLoadName         长传文件名称
      * @param file                   file
      * @param multipartEntityBuilder multipartEntityBuilder null时自动创建
