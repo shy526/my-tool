@@ -1,5 +1,7 @@
 package com.github.shy526.http;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.CharEncoding;
@@ -44,6 +46,12 @@ public class HttpResult implements Closeable {
             this.httpStatus = response.getStatusLine().getStatusCode();
         }
     }
+
+
+    public JSONObject getJsonObj(){
+        return JSON.parseObject(getEntityStr());
+    }
+
 
     /**
      * 输出字符串 形式
