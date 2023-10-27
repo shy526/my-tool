@@ -95,17 +95,34 @@ public enum ApiTestEnum {
     ;
 
 
+    /**
+     * 请求路径
+     */
+    private final String url;
+    /**
+     * 原网址
+     */
+    private final String remark;
+    /**
+     * 支持的http请求的方法
+     */
 
-    private String url;
-    private String remark;
+    private final List<MethodEnum> methods;
+    /**
+     * 需要的参数
+     */
+    private final String aipParams;
+    /**
+     * 结果获取路径
+     */
 
-    private List<MethodEnum> methods;
+    private final String resultPath;
 
-    private String aipParams;
+    /**
+     * 提交类型
+     */
 
-    private String resultPath;
-
-    private EnctypeEnum enctype;
+    private final EnctypeEnum enctype;
 
     ApiTestEnum(String url, String remark, List<MethodEnum> methods, String aipParams, String resultPath, EnctypeEnum enctype) {
         this.url = url;
