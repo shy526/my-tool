@@ -29,7 +29,8 @@ public class ApiClient {
     static {
         QUEUE.addAll(Lists.newArrayList(ApiTestEnum.values()));
     }
-    public static JSONObject exec(String testApi, HttpClientService httpClientService,ApiTestEnum value) {
+
+    public static JSONObject exec(String testApi, HttpClientService httpClientService, ApiTestEnum value) {
         JSONObject prop = new JSONObject();
         prop.put("url", testApi);
         prop.put("method", MethodEnum.GET.toString());
@@ -42,13 +43,14 @@ public class ApiClient {
         prop.put("url", testApi);
         prop.put("method", MethodEnum.GET.toString());
         ApiTestEnum value = null;
+        JSONObject result = new JSONObject();
         try {
             value = QUEUE.take();
+            result = getResult(httpClientService, value, buildRequestPack(prop, value));
             QUEUE.offer(value);
         } catch (InterruptedException ignored) {
         }
-
-        return getResult(httpClientService, value, buildRequestPack(prop, value));
+        return result;
     }
 
 
