@@ -16,6 +16,7 @@ import org.apache.http.entity.mime.content.StringBody;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -29,7 +30,13 @@ public class ApiClient {
     static {
         QUEUE.addAll(Lists.newArrayList(ApiTestEnum.values()));
     }
-    public static JSONObject exec(String testApi, HttpClientService httpClientService,ApiTestEnum value) {
+
+    public static void restApiTestEnumQueue(ApiTestEnum... apiTestEnums) {
+        QUEUE.clear();
+        QUEUE.addAll(Arrays.asList(apiTestEnums));
+    }
+
+    public static JSONObject exec(String testApi, HttpClientService httpClientService, ApiTestEnum value) {
         JSONObject prop = new JSONObject();
         prop.put("url", testApi);
         prop.put("method", MethodEnum.GET.toString());
@@ -42,13 +49,16 @@ public class ApiClient {
         prop.put("url", testApi);
         prop.put("method", MethodEnum.GET.toString());
         ApiTestEnum value = null;
+        JSONObject result = new JSONObject();
         try {
             value = QUEUE.take();
-            QUEUE.offer(value);
-        } catch (InterruptedException ignored) {
+            result = getResult(httpClientService, value, buildRequestPack(prop, value));
+        } catch (Exception ignored) {
+        } finally {
+            boolean temp = value != null && QUEUE.offer(value);
         }
 
-        return getResult(httpClientService, value, buildRequestPack(prop, value));
+        return result;
     }
 
 
@@ -66,7 +76,17 @@ public class ApiClient {
                     int tempVal = s.indexOf("[");
                     if (tempVal == -1) {
                         String decode = URLDecoder.decode(temp.getString(s), "UTF-8");
-                        temp = JSON.parseObject(decode);
+                        if (JSON.isValid(decode)){
+                            temp = JSON.parseObject(decode);
+                        }else {
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("result",decode);
+                            jsonObject.put("apiTestError",true);
+                            temp=jsonObject;
+                            break;
+
+                        }
+
                     } else {
                         String index = s.substring(tempVal + 1, s.length() - 1);
                         temp = temp.getJSONArray("data").getJSONObject(Integer.parseInt(index));

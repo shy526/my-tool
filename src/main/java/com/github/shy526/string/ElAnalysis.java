@@ -2,9 +2,6 @@ package com.github.shy526.string;
 
 import com.alibaba.fastjson.JSONObject;
 
-import java.util.Properties;
-import java.util.Set;
-
 public class ElAnalysis {
 
     private final static String PREFIX = "${";
@@ -17,15 +14,26 @@ public class ElAnalysis {
         while (index < result.length() && startIndex != -1) {
             if (matchSubStr(result, index, SUFFIX)) {
                 String key = result.substring(startIndex + PREFIX.length(), index);
-                String[] tempAry = key.split(":");
-                key = tempAry[0];
-                String defaultVal = tempAry.length > 1 ? tempAry[1] : null;
                 String propVal = prop.getString(key);
-                propVal = propVal == null ? defaultVal : propVal;
+                if (key.contains("==")) {
+                    String[] tempAry = key.split("==");
+                    propVal = prop.getString(tempAry[0]);
+                    if (propVal != null) {
+                        String[] tempAry2 = tempAry[1].split("\\?");
+                        String[] reAry = tempAry2[1].split(":");
+                        propVal = tempAry[0].equals(propVal) ? reAry[0] : reAry[1];
+                    }
+                } else {
+                    String[] tempAry = key.split(":");
+                    key = tempAry[0];
+                    String defaultVal = tempAry.length > 1 ? tempAry[1] : null;
+                    propVal = prop.getString(key);
+                    propVal = propVal == null ? defaultVal : propVal;
+                }
                 int temp = index + SUFFIX.length();
                 if (propVal != null) {
                     result.replace(startIndex, index + SUFFIX.length(), propVal);
-                    temp = index + propVal.length();
+                    temp = startIndex + propVal.length();
                 }
                 startIndex = result.indexOf(PREFIX, temp);
                 index = startIndex + PREFIX.length();
