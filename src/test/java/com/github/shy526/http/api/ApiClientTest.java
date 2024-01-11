@@ -311,10 +311,7 @@ public class ApiClientTest {
     @Test
     public void testExec444(){
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-        JSONObject exec = ApiClient.exec("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", httpClientService, ApiTestEnum.HELP_BJ);
-        System.out.println("exec = " + exec);
         ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json",httpClientService);
         String get = forwardProcess.exe("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", "GET", null);
-        System.out.println(get);
     }
 }
