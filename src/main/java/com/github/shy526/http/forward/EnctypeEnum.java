@@ -1,4 +1,4 @@
-package com.github.shy526.http.api;
+package com.github.shy526.http.forward;
 
 public enum EnctypeEnum {
     MULTIPART("Multipart/form-data"),
