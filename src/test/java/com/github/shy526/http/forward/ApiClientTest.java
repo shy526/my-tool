@@ -40,10 +40,10 @@ public class ApiClientTest {
             boolean temp = file.exists() && file.delete();
         }
         String proxyUrl = "https://proxy.shy526.top?targetUrls=%s";
-      ///  ApiClient.restApiTestEnumQueue(ApiTestEnum.SHULIJP);
-        String targetUrls="";
+        ///  ApiClient.restApiTestEnumQueue(ApiTestEnum.SHULIJP);
+        String targetUrls = "";
         try {
-            targetUrls = URLEncoder.encode("https://steamcommunity.com/market/search/render/?query=&start=30&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570","utf-8");
+            targetUrls = URLEncoder.encode("https://steamcommunity.com/market/search/render/?query=&start=30&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570", "utf-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -63,7 +63,7 @@ public class ApiClientTest {
             }
             tempSb.deleteCharAt(tempSb.length() - 1);
             String baseStr = null;
-         //   JSONObject total1 = ApiClient.exec(String.format(proxyUrl, baseStr), httpClientService);
+            //   JSONObject total1 = ApiClient.exec(String.format(proxyUrl, baseStr), httpClientService);
             tempSb.setLength(0);
             urls.clear();
         }
@@ -156,7 +156,7 @@ public class ApiClientTest {
         for (Object o : tempArr) {
             JSONObject json = (JSONObject) o;
             JSONObject data = json.getJSONObject("result").getJSONObject("data");
-            if (data==null){
+            if (data == null) {
                 System.out.println();
             }
             total = data.getIntValue("total_page");
@@ -276,19 +276,36 @@ public class ApiClientTest {
 
 
     @Test
-    public void testExec444(){
+    public void testExec444() {
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-        ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json",httpClientService);
-        String url="https://steamcommunity.com/market/search/render/?query=&start=0&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23&norender=1";
-     ///   String get = forwardProcess.exe(url, "GET", null);
-        BlockingQueue<ForwardInfo> forwardQueue = forwardProcess.getForwardQueue();
-        for (ForwardInfo forwardInfo : forwardQueue) {
-            if (!forwardInfo.isChineseMainland()){
-                String exe = forwardProcess.exe(forwardInfo, url, MethodEnum.GET, null);
-                System.out.println(exe);
+        Map<String,String> header=new HashMap<>();
+        header.put("Accept-Language","zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
+        ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json", httpClientService);
+        String url = "https://steamcommunity.com/market/search/render/?query=&start=0&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23&norender=1";
+        String pageUrl = "https://steamcommunity.com/market/search/render/?query=&start=%s&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=233&norender=1";
+        for (int i = 0; i < 37848; i+=100) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
-
+            String format = String.format(pageUrl, i);
+            String result = forwardProcess.exeF(format, MethodEnum.GET, header);
+            if (result==null){
+                System.out.println("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+                continue;
+            }
+            JSONObject parse = JSONObject.parseObject(result);
+            JSONArray results = parse.getJSONArray("results");
+            for (int i1 = 0; i1 < results.size(); i1++) {
+                JSONObject jsonObject = results.getJSONObject(i1);
+                String name = jsonObject.getString("name");
+                String hashName = jsonObject.getString("hash_name");
+                System.out.println(name+"->>>" + hashName);
+            }
+            System.out.println("--------------------------------------------------");
         }
+
 
     }
 }

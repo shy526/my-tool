@@ -32,6 +32,11 @@ public class ForwardClient {
     private final static String GET_IP_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo";
     @Getter
     private final BlockingQueue<ForwardInfo> forwardQueue = new LinkedBlockingQueue<>();
+    @Getter
+    private final BlockingQueue<ForwardInfo> chineseMainlandForwardQueueT = new LinkedBlockingQueue<>();
+
+    @Getter
+    private final BlockingQueue<ForwardInfo> chineseMainlandForwardQueueF = new LinkedBlockingQueue<>();
     private final static Map<String, Token> TOKEN_MAP = new HashMap<>();
     private final static Map<String, Set<String>> ERR_MAP = new HashMap<>();
     private HttpClientService httpClientService;
@@ -78,7 +83,8 @@ public class ForwardClient {
             } else {
                 forwardInfo.setChineseMainland(false);
             }
-
+            boolean temp = forwardInfo.isChineseMainland() ? forwardClient.chineseMainlandForwardQueueT.add(forwardInfo)
+                    : forwardClient.chineseMainlandForwardQueueF.add(forwardInfo);
             String addr = country + "-" + province + "-" + data.getString("city");
             forwardInfo.setAddr(addr);
             System.out.println(forwardInfo.getTargetUrl() + "-->" + addr);
@@ -88,21 +94,36 @@ public class ForwardClient {
     }
 
     public String exe(String url, MethodEnum method, Map<String, String> header) {
+        return exe(url, method, header, forwardQueue, 0);
+    }
+
+    public String exeF(String url, MethodEnum method, Map<String, String> header) {
+        return exe(url, method, header, chineseMainlandForwardQueueF, 0);
+    }
+
+    public String exeT(String url, MethodEnum method, Map<String, String> header) {
+        return exe(url, method, header, chineseMainlandForwardQueueT, 0);
+    }
+
+    public String exe(String url, MethodEnum method, Map<String, String> header, BlockingQueue<ForwardInfo> queue, int i) {
         ForwardInfo forwardInfo = null;
         String result = null;
         try {
-            forwardInfo = forwardQueue.take();
+            forwardInfo = queue.take();
+            if (i >= 3) {
+                return null;
+            }
             Set<String> has = ERR_MAP.get(forwardInfo.getTargetUrl());
             String host = newURL(url).getHost();
-            if (has.contains(host)) {
-                return null;
+            if (has!=null&&has.contains(host)) {
+                return exe(url, method, header, queue, ++i);
             }
             result = exe(forwardInfo, url, method, header);
 
         } catch (Exception ignored) {
         } finally {
             if (forwardInfo != null) {
-                forwardQueue.offer(forwardInfo);
+                queue.offer(forwardInfo);
             }
         }
         return result;
@@ -133,8 +154,9 @@ public class ForwardClient {
 
     /**
      * 设置转发请求头
+     *
      * @param forwardInfo forwardInfo
-     * @param targetUrl targetUrl
+     * @param targetUrl   targetUrl
      * @param requestPack requestPack
      */
     private void setTargetHeader(ForwardInfo forwardInfo, String targetUrl, RequestPack requestPack) {
@@ -148,11 +170,12 @@ public class ForwardClient {
 
     /**
      * 设置转发参数
+     *
      * @param requestPack requestPack
      * @param forwardInfo forwardInfo
-     * @param method method
-     * @param url url
-     * @param header header
+     * @param method      method
+     * @param url         url
+     * @param header      header
      */
     private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, MethodEnum method, String url, Map<String, String> header) {
         String token = getToken(forwardInfo);
@@ -194,8 +217,9 @@ public class ForwardClient {
 
     /**
      * 将请求头Map转华为字符串
+     *
      * @param header header
-     * @return  String
+     * @return String
      */
     private String header2Str(Map<String, String> header) {
         StringBuilder headerSb = new StringBuilder();
@@ -213,6 +237,7 @@ public class ForwardClient {
 
     /**
      * 获取token
+     *
      * @param forwardInfo forwardInfo
      * @return String
      */
@@ -245,8 +270,9 @@ public class ForwardClient {
 
     /**
      * 字符串请求头解析为map
+     *
      * @param headerStr headerStr
-     * @param header header
+     * @param header    header
      */
     private void parseHeader(String headerStr, Map<String, String> header) {
         if (StringUtils.isEmpty(headerStr)) {
@@ -265,7 +291,8 @@ public class ForwardClient {
 
     /**
      * 解析结果路径
-     * @param json json
+     *
+     * @param json    json
      * @param jsonPah 路径
      * @return String
      */
@@ -303,6 +330,7 @@ public class ForwardClient {
         }
         return str;
     }
+
     private URL newURL(String url) {
         try {
             return new URL(url);
@@ -310,6 +338,7 @@ public class ForwardClient {
         }
         return null;
     }
+
     protected RequestPack buildRequestPack(String url, String tokenMethod) {
         String method = tokenMethod.toUpperCase();
         if ("GET".equals(method)) {
