@@ -78,7 +78,7 @@ public enum ApiTestEnum {
     TOOLFK("https://www.toolfk.com/toolfk-http-curl","toolfk",
             Lists.newArrayList(MethodEnum.GET, MethodEnum.POST),"{\n" +
             "  \"modules\": \"\",\n" +
-            "  \"hide-method \": \",${hide-method}\",\n" +
+            "  \"hide-method \": \"${method}\",\n" +
             "  \"hide-link\": \"${url}\",\n" +
             "  \"body_json \": \"\",\n" +
             "  \"result \": \"\"\n" +
@@ -92,6 +92,8 @@ public enum ApiTestEnum {
             Lists.newArrayList(MethodEnum.GET, MethodEnum.POST), "{\"tourl\":\"${url}\",\"parms\":\"\",\"header\":\"Content-Type:application/x-www-form-urlencoded\"," +
             "\"seltype\":\"${method}\",\"code\":\"utf8\",\"jieya\":\"1\"}", "body"
             , EnctypeEnum.JSON),
+
+
     ;
 
 

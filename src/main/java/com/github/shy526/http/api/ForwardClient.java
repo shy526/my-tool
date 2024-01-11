@@ -18,7 +18,6 @@ import org.apache.http.entity.mime.content.StringBody;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.Serializable;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -32,7 +31,7 @@ public class ForwardClient {
 
     private final static String GET_IP_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo";
     private final BlockingQueue<ForwardInfo> forwardQueue = new LinkedBlockingQueue<>();
-    private final static Map<String, Token> TOKEN_MAP = new HashMap<>();
+    private final static Map<String, TestEnum.Token> TOKEN_MAP = new HashMap<>();
     private HttpClientService httpClientService;
 
     private ForwardClient() {
@@ -45,7 +44,8 @@ public class ForwardClient {
             while ((line = reader.readLine()) != null) {
                 sb.append(line.trim());
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         if (sb.length() <= 0) {
             return null;
@@ -80,7 +80,7 @@ public class ForwardClient {
 
             String addr = country + "-" + province + "-" + data.getString("city");
             forwardInfo.setAddr(addr);
-            System.out.println(forwardInfo.getTargetUrl() + "-->" + addr);
+            System.out.println(forwardInfo.getTargetUrl()+"-->"+addr);
             forwardClient.forwardQueue.add(forwardInfo);
         }
         return forwardClient;
@@ -109,11 +109,6 @@ public class ForwardClient {
         Map<String, String> auto = new HashMap<>();
         auto.put("Referer", forwardInfo.getTargetUrl());
         auto.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
-        parseHeader(forwardInfo.getTargetHeader(), auto);
-        try {
-            auto.put("Host", new URL(forwardInfo.getTargetUrl()).getHost());
-        } catch (Exception ignored) {
-        }
         requestPack.setHeader(auto);
         buildParams(requestPack, forwardInfo, method, url, header);
         try (HttpResult httpResult = httpClientService.execute(requestPack)) {
@@ -129,13 +124,6 @@ public class ForwardClient {
         String headerStr = header2Str(header);
         String paramsEl = forwardInfo.getParamsEl();
         JSONObject elMap = new JSONObject();
-        try {
-            URL temp = new URL(url);
-            elMap.put("host", temp.getHost());
-            elMap.put("path", temp.getPath());
-            elMap.put("protocol", temp.getProtocol());
-        } catch (Exception ignored) {
-        }
         elMap.put("method", method);
         elMap.put("url", url);
         elMap.put("token", token);
@@ -193,30 +181,15 @@ public class ForwardClient {
         tokenMethod = StringUtils.isEmpty(tokenMethod) ? "GET" : tokenMethod;
         RequestPack requestPack = buildRequestPack(tokenUrl, tokenMethod);
         Map<String, String> header = new HashMap<>();
-        parseHeader(forwardInfo.getTokenHeader(), header);
+        header.put("Cookie", "postman.sid=335fb260230aaff9b7c4a0fe7e2990f6325a033791006fa5dc362cd0030ca6218d0a2032a4edb51530fdc0a71c089c7559a73f6dc5ab7d7561c06317d4ef11875343cc5d393543b475a230a5436ce99cbdd45f0337b7e953c50b1878ce596c153b43a7ec9eafe266a1482a4c95be7eec64954fbca82c3b5f200bf010d1b719167d0134c3a62588a5151b715ddda1b0ef81e5dcd0338701eeab0c7619a1d63eb95aae27f58b6fd689b00355282dc7c926df5b2f98a4d6c6b01fb179ff9637287b1efffc786cbb4bc49de7210a96fa660915276dab31ddb48982e06ad6dbb68781e0d736dee4da3ca12cc478f9cc88468a702e7bcb38f3a73b5215c5383289bb3d4061b83e11abac25b47ca6e533686f4d266c752fb1837f7669253c1157e22997f3fe731a19c0979e12f912d2bbfe2d26d9b227aa2ec5959be01ebd0add994f163c816bd7b17c337bc3f6840e4a0ba0809158cbfbf184689bc64fcf58d4d0828e9c8d733026da0bf6b51ab936dcb11c5e379681a7b8e1d5bb881ba888f38f6df7bd6925647a90c012cca361d79331ea2d3b386f72af572640ae401a5b93d63a14b5a980269f8f43ea177b29eda8c4ddc5623d3263c38af9c2ce650734e904ceffe56fa579af05604059d9781daf5f93b1ed92107e6d6d20de75db54c8");
+
         requestPack.setHeader(header);
         try (HttpResult execute = httpClientService.execute(requestPack)) {
             token = parseJsonPath(execute.getEntityStr(), tokenPath);
         } catch (Exception ignored) {
-        }
-        if (StringUtils.isNotEmpty(token)) {
-            addToken(tokenUrl, token);
+
         }
         return token;
-    }
-
-    private void parseHeader(String headerStr, Map<String, String> header) {
-        if (StringUtils.isEmpty(headerStr)) {
-            return;
-        }
-        String[] split = headerStr.split(";");
-        for (String kv : split) {
-            String[] kvArr = kv.split(":");
-            if (kvArr.length != 2) {
-                continue;
-            }
-            header.put(kvArr[0], kvArr[1]);
-        }
     }
 
     protected String parseJsonPath(String json, String jsonPah) {
@@ -239,19 +212,15 @@ public class ForwardClient {
                 str = temp.getJSONArray("data").getString(Integer.parseInt(index));
             }
             if (!JSON.isValid(str)) {
-                return decode(str);
+                return str;
+            }
+            try {
+                str = URLDecoder.decode(str, "UTF-8");
+            } catch (Exception ignored) {
             }
             temp = JSON.parseObject(str);
         }
         return temp.toJSONString();
-    }
-
-    private String decode(String str) {
-        try {
-            return URLDecoder.decode(str, CharEncoding.UTF_8);
-        } catch (Exception ignored) {
-        }
-        return str;
     }
 
     protected RequestPack buildRequestPack(String url, String tokenMethod) {
@@ -263,15 +232,15 @@ public class ForwardClient {
         }
     }
 
-    protected void addToken(String key, String tokenStr) {
-        Token token = new Token();
+    protected void addToken(TestEnum testEnum, String tokenStr) {
+        TestEnum.Token token = new TestEnum.Token();
         token.setToken(tokenStr);
         token.setTime(System.currentTimeMillis() - 2000);
-        TOKEN_MAP.put(key, token);
+        TOKEN_MAP.put(testEnum.toString(), token);
     }
 
     protected String getToken(String tokenUrl, long expiry) {
-        Token token = TOKEN_MAP.get(tokenUrl);
+        TestEnum.Token token = TOKEN_MAP.get(tokenUrl);
         if (token == null) {
             return null;
         }

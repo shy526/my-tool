@@ -1,14 +1,18 @@
 package com.github.shy526.http.api;
 
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.shy526.http.HttpClientFactory;
 import com.github.shy526.http.HttpClientProperties;
 import com.github.shy526.http.HttpClientService;
+import com.github.shy526.http.HttpResult;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.ArrayUtils;
 import com.github.shy526.http.*;
 import com.google.common.io.BaseEncoding;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.jsoup.Jsoup;
@@ -20,21 +24,25 @@ import org.junit.Test;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class ApiClientTest   {
+public class ApiClientTest {
 
     @Test
     public void testExec() {
 
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
         ApiTestEnum[] values = ApiTestEnum.values();
-        for (int i = 0; i < values.length; i++) {
-            ApiTestEnum value = values[i];
-            JSONObject exec = ApiClient.exec("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", httpClientService, value);
-            System.out.println(value.toString() + "->" + exec.getJSONObject("data").get("country") + "-" + exec.getJSONObject("data").get("province") + "->" + exec.getJSONObject("data").get("addr"));
+        for (int i=0;i<ApiTestEnum.values().length;i++) {
+            JSONObject exec = ApiClient.exec("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", httpClientService,values[i]);
+            System.out.println(values[i]);
+            System.out.println(exec.getJSONObject("data").get("country")+"-"+exec.getJSONObject("data").get("province")+"->" + exec.getJSONObject("data").get("addr"));
+
         }
 
     }
@@ -44,7 +52,7 @@ public class ApiClientTest   {
         //https://steamcommunity.com/market/search/render/?query=&start=10&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570
         //https://steamcommunity.com/market/search/render/?query=&start=%s&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-        HashMap<String, String> header = new HashMap<>();
+        Map<String, String> header = new HashMap<>();
         header.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
         String pageUrl = "https://steamcommunity.com/market/search/render/?query=&start=%s&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23";
         File file = new File("C:\\Users\\sunda\\Desktop\\data2饰品信息.txt");
@@ -162,24 +170,59 @@ public class ApiClientTest   {
 
     }
 
+    private int pageParse(HttpClientService httpClientService, String proxyUrl, StringBuilder sb) {
+        String hash = null;
+        try {
+            hash = URLEncoder.encode(sb.toString(), "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            Thread.sleep(10000);
+        } catch (Exception e) {
+        }
+        HttpResult httpResult = httpClientService.get(String.format(proxyUrl, hash));
+        JSONObject jsonObj = httpResult.getJsonObj();
+        JSONArray tempArr = jsonObj.getJSONArray("result");
+        int total = 0;
+        for (Object o : tempArr) {
+            JSONObject json = (JSONObject) o;
+            JSONObject data = json.getJSONObject("result").getJSONObject("data");
+            if (data==null){
+                System.out.println();
+            }
+            total = data.getIntValue("total_page");
+            JSONArray items = data.getJSONArray("items");
+            for (int i = 0; i < items.size(); i++) {
+                json = items.getJSONObject(i);
+                Integer buffId = json.getInteger("id");
+                String marketHashName = json.getString("market_hash_name");
+                String cnName = json.getString("name");
+                BigDecimal price = json.getBigDecimal("sell_min_price");
+                System.out.println(buffId + "," + marketHashName + "," + cnName + "," + price);
+            }
+        }
+        return total;
+    }
+
 
     @Test
     public void testExec3() {
-        String str="测试数据";
+        String str = "测试数据";
         byte[] bytes = str.getBytes();
         List<Integer> colors = new ArrayList<>();
         List<Integer> rgb = new ArrayList<>(3);
-        int length=bytes.length;
+        int length = bytes.length;
         int a = ((length >> 24) & 0xff);
-        int r =  ((length >> 16) & 0xff);
-        int g =  ((length >> 8) & 0xff);
-        int b =  (length & 0xff);
+        int r = ((length >> 16) & 0xff);
+        int g = ((length >> 8) & 0xff);
+        int b = (length & 0xff);
         int color = getColor(Lists.newArrayList(r, g, b));
         colors.add(color);
         colors.add(getColor(Lists.newArrayList(a, 0, 0)));
         for (byte aByte : bytes) {
-            rgb.add(Byte.toUnsignedInt(aByte)) ;
-            if (rgb.size()==3){
+            rgb.add(Byte.toUnsignedInt(aByte));
+            if (rgb.size() == 3) {
                 colors.add(getColor(rgb));
                 rgb.clear();
             }
@@ -188,10 +231,10 @@ public class ApiClientTest   {
         int width = br.getWidth();
         int height = br.getHeight();
         Iterator<Integer> iterator = colors.iterator();
-        for (int y=0;y<height;y++){
-            for (int x=0;x<width;x++){
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
 
-                br.setRGB(x,y,iterator.next());
+                br.setRGB(x, y, iterator.next());
             }
         }
         File file = new File("D:\\个人文件\\图片\\test.png");
@@ -215,12 +258,12 @@ public class ApiClientTest   {
             int color1 = getColor(Lists.newArrayList((int) colorRGB[0], (int) colorRGB[1], (int) colorRGB[2]));
             int rgb2 = br.getRGB(1, 0);
             colorRGB = getColorRGB(rgb2);
-            int lent =color1|((int)colorRGB[0])<<24;
+            int lent = color1 | ((int) colorRGB[0]) << 24;
             System.out.println("rgb2 = " + rgb2);
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            for (int y=0;y<height;y++){
-                for (int x=0;x<width;x++){
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
                     int color = br.getRGB(x, y);
                     byte[] rgb = getColorRGB(color);
                     bos.write(rgb);
@@ -229,7 +272,7 @@ public class ApiClientTest   {
             bos.write(0);
             bos.write(0);
             byte[] bytes = bos.toByteArray();
-            String string = new String(bytes,6,12);
+            String string = new String(bytes, 6, 12);
             System.out.println("string = " + string);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -240,7 +283,7 @@ public class ApiClientTest   {
 
     @Test
     public void testExec5() {
-        int v=100;
+        int v = 100;
         byte a = (byte) ((v >> 24) & 0xff);
         byte b = (byte) ((v >> 16) & 0xff);
         byte c = (byte) ((v >> 8) & 0xff);
@@ -250,10 +293,10 @@ public class ApiClientTest   {
     }
 
     private static int getColor(List<Integer> rgb) {
-        int r=rgb.get(0);
-        int g=rgb.get(1);
-        int b=rgb.get(2);
-        return (r<<16) | (g<<8) | b;
+        int r = rgb.get(0);
+        int g = rgb.get(1);
+        int b = rgb.get(2);
+        return (r << 16) | (g << 8) | b;
     }
 
     public static byte[] getColorRGB(int color) {
@@ -261,5 +304,16 @@ public class ApiClientTest   {
         byte g = (byte) ((color >> 8) & 0xff);
         byte b = (byte) (color & 0xff);
         return new byte[]{r, g, b};
+    }
+
+
+    @Test
+    public void testExec444(){
+        HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
+        JSONObject exec = ApiClient.exec("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", httpClientService, ApiTestEnum.HELP_BJ);
+        System.out.println("exec = " + exec);
+        ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json",httpClientService);
+        String get = forwardProcess.exe("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", "GET", null);
+        System.out.println(get);
     }
 }

@@ -27,6 +27,7 @@ public class ApiClient {
 
     private final static BlockingQueue<ApiTestEnum> QUEUE = new LinkedBlockingQueue<>();
 
+
     static {
         QUEUE.addAll(Lists.newArrayList(ApiTestEnum.values()));
     }
