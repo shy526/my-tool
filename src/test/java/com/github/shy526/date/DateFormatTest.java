@@ -1,48 +1,24 @@
 package com.github.shy526.date;
 
+import com.alibaba.fastjson.JSONObject;
 import com.github.shy526.http.*;
-import org.apache.http.*;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.AuthState;
-import org.apache.http.auth.ChallengeState;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
+import com.github.shy526.string.ElAnalysis;
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.*;
-import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.BasicHttpContext;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.junit.Test;
-import sun.misc.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -154,6 +130,16 @@ public class DateFormatTest {
         System.out.println(execute.getHttpStatus());
         System.out.println(execute.getEntityStr());
 
+
+    }
+    @Test
+    public  void  xxx(){
+       String str= "${2}${1}";
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("1","test");
+        jsonObject.put("2","kk");
+        String process = ElAnalysis.process(str, jsonObject);
+        System.out.println("process = " + process);
 
     }
 
