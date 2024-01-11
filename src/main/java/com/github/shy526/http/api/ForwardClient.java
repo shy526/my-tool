@@ -7,6 +7,7 @@ import com.github.shy526.http.HttpResult;
 import com.github.shy526.http.RequestPack;
 import com.github.shy526.string.ElAnalysis;
 import lombok.Data;
+import lombok.Getter;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
@@ -21,9 +22,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
@@ -31,8 +30,10 @@ import java.util.stream.Collectors;
 public class ForwardClient {
 
     private final static String GET_IP_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo";
+    @Getter
     private final BlockingQueue<ForwardInfo> forwardQueue = new LinkedBlockingQueue<>();
     private final static Map<String, Token> TOKEN_MAP = new HashMap<>();
+    private final static Map<String, Set<String>> ERR_MAP = new HashMap<>();
     private HttpClientService httpClientService;
 
     private ForwardClient() {
@@ -61,7 +62,7 @@ public class ForwardClient {
         ForwardClient forwardClient = new ForwardClient();
         forwardClient.httpClientService = httpClientService;
         for (ForwardInfo forwardInfo : forwardInfos) {
-            String result = forwardClient.exe(forwardInfo, GET_IP_URL, "GET", null);
+            String result = forwardClient.exe(forwardInfo, GET_IP_URL, MethodEnum.GET, null);
             if (StringUtils.isEmpty(result)) {
                 System.out.println(JSON.toJSONString(forwardInfo) + "-> err req");
                 continue;
@@ -86,11 +87,16 @@ public class ForwardClient {
         return forwardClient;
     }
 
-    public String exe(String url, String method, Map<String, String> header) {
+    public String exe(String url, MethodEnum method, Map<String, String> header) {
         ForwardInfo forwardInfo = null;
         String result = null;
         try {
             forwardInfo = forwardQueue.take();
+            Set<String> has = ERR_MAP.get(forwardInfo.getTargetUrl());
+            String host = newURL(url).getHost();
+            if (has.contains(host)) {
+                return null;
+            }
             result = exe(forwardInfo, url, method, header);
 
         } catch (Exception ignored) {
@@ -103,40 +109,61 @@ public class ForwardClient {
 
     }
 
-    public String exe(ForwardInfo forwardInfo, String url, String method, Map<String, String> header) {
+    public String exe(ForwardInfo forwardInfo, String url, MethodEnum method, Map<String, String> header) {
         String result = null;
-        RequestPack requestPack = buildRequestPack(forwardInfo.getTargetUrl(), forwardInfo.getTargetMethod());
-        Map<String, String> auto = new HashMap<>();
-        auto.put("Referer", forwardInfo.getTargetUrl());
-        auto.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
-        parseHeader(forwardInfo.getTargetHeader(), auto);
-        try {
-            auto.put("Host", new URL(forwardInfo.getTargetUrl()).getHost());
-        } catch (Exception ignored) {
-        }
-        requestPack.setHeader(auto);
+        String targetUrl = forwardInfo.getTargetUrl();
+        RequestPack requestPack = buildRequestPack(targetUrl, forwardInfo.getTargetMethod());
+        setTargetHeader(forwardInfo, targetUrl, requestPack);
         buildParams(requestPack, forwardInfo, method, url, header);
+        Integer httpStatus = 200;
         try (HttpResult httpResult = httpClientService.execute(requestPack)) {
+            httpStatus = httpResult.getHttpStatus();
             result = parseJsonPath(httpResult.getEntityStr(), forwardInfo.getTargetPath());
         } catch (Exception ignored) {
         }
-
+        if (StringUtils.isEmpty(result) || httpStatus != 200) {
+            Set<String> hase = ERR_MAP.get(targetUrl);
+            hase = hase == null ? new HashSet<>() : hase;
+            hase.add(newURL(url).getHost());
+            ERR_MAP.put(targetUrl, hase);
+        }
         return result;
     }
 
-    private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, String method, String url, Map<String, String> header) {
+
+    /**
+     * 设置转发请求头
+     * @param forwardInfo forwardInfo
+     * @param targetUrl targetUrl
+     * @param requestPack requestPack
+     */
+    private void setTargetHeader(ForwardInfo forwardInfo, String targetUrl, RequestPack requestPack) {
+        Map<String, String> auto = new HashMap<>();
+        auto.put("Referer", targetUrl);
+        auto.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
+        parseHeader(forwardInfo.getTargetHeader(), auto);
+        auto.put("Host", newURL(targetUrl).getHost());
+        requestPack.setHeader(auto);
+    }
+
+    /**
+     * 设置转发参数
+     * @param requestPack requestPack
+     * @param forwardInfo forwardInfo
+     * @param method method
+     * @param url url
+     * @param header header
+     */
+    private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, MethodEnum method, String url, Map<String, String> header) {
         String token = getToken(forwardInfo);
         String headerStr = header2Str(header);
         String paramsEl = forwardInfo.getParamsEl();
         JSONObject elMap = new JSONObject();
-        try {
-            URL temp = new URL(url);
-            elMap.put("host", temp.getHost());
-            elMap.put("path", temp.getPath());
-            elMap.put("protocol", temp.getProtocol());
-        } catch (Exception ignored) {
-        }
-        elMap.put("method", method);
+        URL temp = newURL(url);
+        elMap.put("host", temp.getHost());
+        elMap.put("path", temp.getPath());
+        elMap.put("protocol", temp.getProtocol());
+        elMap.put("method", method.toString());
         elMap.put("url", url);
         elMap.put("token", token);
         elMap.put("header", headerStr);
@@ -165,6 +192,11 @@ public class ForwardClient {
         }
     }
 
+    /**
+     * 将请求头Map转华为字符串
+     * @param header header
+     * @return  String
+     */
     private String header2Str(Map<String, String> header) {
         StringBuilder headerSb = new StringBuilder();
         if (header != null && !header.isEmpty()) {
@@ -178,6 +210,12 @@ public class ForwardClient {
         return headerSb.toString();
     }
 
+
+    /**
+     * 获取token
+     * @param forwardInfo forwardInfo
+     * @return String
+     */
     private String getToken(ForwardInfo forwardInfo) {
         String tokenUrl = forwardInfo.getTokenUrl();
         String tokenPath = forwardInfo.getTokenPath();
@@ -205,6 +243,11 @@ public class ForwardClient {
         return token;
     }
 
+    /**
+     * 字符串请求头解析为map
+     * @param headerStr headerStr
+     * @param header header
+     */
     private void parseHeader(String headerStr, Map<String, String> header) {
         if (StringUtils.isEmpty(headerStr)) {
             return;
@@ -219,6 +262,13 @@ public class ForwardClient {
         }
     }
 
+
+    /**
+     * 解析结果路径
+     * @param json json
+     * @param jsonPah 路径
+     * @return String
+     */
     protected String parseJsonPath(String json, String jsonPah) {
         if (StringUtils.isEmpty(jsonPah)) {
             return json;
@@ -253,7 +303,13 @@ public class ForwardClient {
         }
         return str;
     }
-
+    private URL newURL(String url) {
+        try {
+            return new URL(url);
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
     protected RequestPack buildRequestPack(String url, String tokenMethod) {
         String method = tokenMethod.toUpperCase();
         if ("GET".equals(method)) {
@@ -280,6 +336,7 @@ public class ForwardClient {
         }
         return token.getToken();
     }
+
 
     @Data
     public static class Token implements Serializable {

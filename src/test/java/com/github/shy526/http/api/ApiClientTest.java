@@ -29,24 +29,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ApiClientTest {
 
-    @Test
-    public void testExec() {
-
-        HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-        ApiTestEnum[] values = ApiTestEnum.values();
-        for (int i=0;i<ApiTestEnum.values().length;i++) {
-            JSONObject exec = ApiClient.exec("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", httpClientService,values[i]);
-            System.out.println(values[i]);
-            System.out.println(exec.getJSONObject("data").get("country")+"-"+exec.getJSONObject("data").get("province")+"->" + exec.getJSONObject("data").get("addr"));
-
-        }
-
-    }
 
     @Test
     public void testExec2() {
@@ -61,7 +49,7 @@ public class ApiClientTest {
             boolean temp = file.exists() && file.delete();
         }
         String proxyUrl = "https://proxy.shy526.top?targetUrls=%s";
-        ApiClient.restApiTestEnumQueue(ApiTestEnum.SHULIJP);
+      ///  ApiClient.restApiTestEnumQueue(ApiTestEnum.SHULIJP);
         String targetUrls="";
         try {
             targetUrls = URLEncoder.encode("https://steamcommunity.com/market/search/render/?query=&start=30&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570","utf-8");
@@ -84,7 +72,7 @@ public class ApiClientTest {
             }
             tempSb.deleteCharAt(tempSb.length() - 1);
             String baseStr = null;
-            JSONObject total1 = ApiClient.exec(String.format(proxyUrl, baseStr), httpClientService);
+         //   JSONObject total1 = ApiClient.exec(String.format(proxyUrl, baseStr), httpClientService);
             tempSb.setLength(0);
             urls.clear();
         }
@@ -158,18 +146,6 @@ public class ApiClientTest {
         }
     }
 
-    @Test
-    public void testExec33(){
-
-        HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-
-        ForwardClient forwardClient = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\test.json", httpClientService);
-
-        String get = forwardClient.exe("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", "GET", null);
-        System.out.println("get = " + get);
-
-
-    }
 
     private int pageParse(HttpClientService httpClientService, String proxyUrl, StringBuilder sb) {
         String hash = null;
@@ -312,6 +288,16 @@ public class ApiClientTest {
     public void testExec444(){
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
         ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json",httpClientService);
-        String get = forwardProcess.exe("https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo", "GET", null);
+        String url="https://steamcommunity.com/market/search/render/?query=&start=0&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23&norender=1";
+     ///   String get = forwardProcess.exe(url, "GET", null);
+        BlockingQueue<ForwardInfo> forwardQueue = forwardProcess.getForwardQueue();
+        for (ForwardInfo forwardInfo : forwardQueue) {
+            if (!forwardInfo.isChineseMainland()){
+                String exe = forwardProcess.exe(forwardInfo, url, MethodEnum.GET, null);
+                System.out.println(exe);
+            }
+
+        }
+
     }
 }
