@@ -1,7 +1,6 @@
-package com.github.shy526.http.api;
+package com.github.shy526.http.forward;
 
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.shy526.http.HttpClientFactory;
@@ -9,12 +8,6 @@ import com.github.shy526.http.HttpClientProperties;
 import com.github.shy526.http.HttpClientService;
 import com.github.shy526.http.HttpResult;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.ArrayUtils;
-import com.github.shy526.http.*;
-import com.google.common.io.BaseEncoding;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.methods.HttpOptions;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -25,8 +18,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.math.BigDecimal;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
