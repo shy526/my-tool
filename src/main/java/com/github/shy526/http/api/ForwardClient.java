@@ -63,7 +63,7 @@ public class ForwardClient {
         for (ForwardInfo forwardInfo : forwardInfos) {
             String result = forwardClient.exe(forwardInfo, GET_IP_URL, "GET", null);
             if (StringUtils.isEmpty(result)) {
-                System.out.println(JSON.toJSONString(forwardInfo) + "-> err req");
+                System.out.println(forwardInfo.getTargetUrl() + "      -> err req");
                 continue;
             }
             JSONObject jsonObject = JSON.parseObject(result);
