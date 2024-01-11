@@ -8,6 +8,8 @@ import com.github.shy526.http.HttpClientProperties;
 import com.github.shy526.http.HttpClientService;
 import com.github.shy526.http.HttpResult;
 import com.google.common.collect.Lists;
+import org.apache.commons.codec.CharEncoding;
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,7 +22,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.*;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -90,7 +92,7 @@ public class ApiClientTest {
             Document resultsHtml = Jsoup.parse(json.getString("results_html"));
 
             Elements selects = resultsHtml.select(".market_listing_row_link");
-            String url = "https://steamcommunity.com/market/priceoverview/?appid=570&country=CN&currency=23&market_hash_name=%s";
+
             //https://steamcommunity.com/market/itemordershistogram?country=CN&language=schinese&currency=23&item_nameid=176407302&two_factor=0
             Pattern reg = Pattern.compile("Market_LoadOrderSpread\\(\\s*(\\d+)\\s*\\);");
 
@@ -278,34 +280,72 @@ public class ApiClientTest {
     @Test
     public void testExec444() {
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
-        Map<String,String> header=new HashMap<>();
-        header.put("Accept-Language","zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
-        ForwardClient forwardProcess = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json", httpClientService);
-        String url = "https://steamcommunity.com/market/search/render/?query=&start=0&count=10&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=23&norender=1";
+        Map<String, String> header = new HashMap<>();
+        header.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
+        ForwardClient steamPageClient = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\steamPageForward.json", httpClientService);
+        ForwardClient steamIdClient = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\steamIdForward.json", httpClientService);
         String pageUrl = "https://steamcommunity.com/market/search/render/?query=&start=%s&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=233&norender=1";
-        for (int i = 0; i < 37848; i+=100) {
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        String getSteamIdUrl = "https://steamcommunity.com/market/listings/570/%s";
+        Pattern reg = Pattern.compile("Market_LoadOrderSpread\\(\\s*(\\d+)\\s*\\);");
+        File file = new File("C:\\Users\\sunda\\Desktop\\data2饰品信息.txt");
+        Set<String> hash = new HashSet<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] split = line.split(",");
+                hash.add(split[2]);
             }
-            String format = String.format(pageUrl, i);
-            String result = forwardProcess.exeF(format, MethodEnum.GET, header);
-            if (result==null){
-                System.out.println("nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
-                continue;
-            }
+        } catch (Exception ignored) {
+        }
+        PrintWriter fileOut = null;
+        try {
+            fileOut = new PrintWriter(new FileWriter(file,true),true);
+        } catch (Exception ignored) {
+        }
+        for (int index = 0; ; index += 100) {
+            sleep(5000);
+            String result = steamPageClient.exe(String.format(pageUrl, index), MethodEnum.GET, header);
             JSONObject parse = JSONObject.parseObject(result);
             JSONArray results = parse.getJSONArray("results");
-            for (int i1 = 0; i1 < results.size(); i1++) {
-                JSONObject jsonObject = results.getJSONObject(i1);
+            if (results.isEmpty()) {
+                return;
+            }
+            for (int i = 0; i < results.size(); i++) {
+                JSONObject jsonObject = results.getJSONObject(i);
                 String name = jsonObject.getString("name");
                 String hashName = jsonObject.getString("hash_name");
-                System.out.println(name+"->>>" + hashName);
+                try {
+                    hashName = URLEncoder.encode(hashName, CharEncoding.UTF_8).replace("+", "%20");
+                } catch (Exception ignored) {
+                }
+                if (hash.contains(hashName)) {
+                    continue;
+                }
+                String steamIdHtml = steamIdClient.exe(String.format(getSteamIdUrl, hashName), MethodEnum.GET, header);
+                if (StringUtils.isEmpty(steamIdHtml)) {
+                    System.out.println(name + "," + hashName + "not get  id");
+                    continue;
+                }
+                String itemId = null;
+                Matcher matcher = reg.matcher(steamIdHtml);
+                if (matcher.find()) {
+                    itemId = matcher.group(1);
+                    fileOut.println(itemId + "," + name + "," + hashName);
+                } else {
+                    System.out.println(name + "," + hashName + "not get  id");
+                }
+                if (i%10==0){
+                    sleep(5000);
+                }
+
             }
-            System.out.println("--------------------------------------------------");
         }
+    }
 
-
+    private void sleep(long timeOut) {
+        try {
+            TimeUnit.MILLISECONDS.sleep(timeOut);
+        } catch (Exception ignored) {
+        }
     }
 }

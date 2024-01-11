@@ -32,13 +32,7 @@ public class ForwardClient {
     private final static String GET_IP_URL = "https://api.live.bilibili.com/xlive/web-room/v1/index/getIpInfo";
     @Getter
     private final BlockingQueue<ForwardInfo> forwardQueue = new LinkedBlockingQueue<>();
-    @Getter
-    private final BlockingQueue<ForwardInfo> chineseMainlandForwardQueueT = new LinkedBlockingQueue<>();
-
-    @Getter
-    private final BlockingQueue<ForwardInfo> chineseMainlandForwardQueueF = new LinkedBlockingQueue<>();
     private final static Map<String, Token> TOKEN_MAP = new HashMap<>();
-    private final static Map<String, Set<String>> ERR_MAP = new HashMap<>();
     private HttpClientService httpClientService;
 
     private ForwardClient() {
@@ -83,8 +77,6 @@ public class ForwardClient {
             } else {
                 forwardInfo.setChineseMainland(false);
             }
-            boolean temp = forwardInfo.isChineseMainland() ? forwardClient.chineseMainlandForwardQueueT.add(forwardInfo)
-                    : forwardClient.chineseMainlandForwardQueueF.add(forwardInfo);
             String addr = country + "-" + province + "-" + data.getString("city");
             forwardInfo.setAddr(addr);
             System.out.println(forwardInfo.getTargetUrl() + "-->" + addr);
@@ -94,36 +86,26 @@ public class ForwardClient {
     }
 
     public String exe(String url, MethodEnum method, Map<String, String> header) {
-        return exe(url, method, header, forwardQueue, 0);
+        return exe(url, method, header, 0);
     }
 
-    public String exeF(String url, MethodEnum method, Map<String, String> header) {
-        return exe(url, method, header, chineseMainlandForwardQueueF, 0);
-    }
 
-    public String exeT(String url, MethodEnum method, Map<String, String> header) {
-        return exe(url, method, header, chineseMainlandForwardQueueT, 0);
-    }
-
-    public String exe(String url, MethodEnum method, Map<String, String> header, BlockingQueue<ForwardInfo> queue, int i) {
+    public String exe(String url, MethodEnum method, Map<String, String> header, int i) {
         ForwardInfo forwardInfo = null;
         String result = null;
         try {
-            forwardInfo = queue.take();
-            if (i >= 3) {
+            forwardInfo = forwardQueue.take();
+            if (i >= 1) {
                 return null;
             }
-            Set<String> has = ERR_MAP.get(forwardInfo.getTargetUrl());
-            String host = newURL(url).getHost();
-            if (has!=null&&has.contains(host)) {
-                return exe(url, method, header, queue, ++i);
-            }
             result = exe(forwardInfo, url, method, header);
-
+            if (StringUtils.isEmpty(result)) {
+                return exe(url, method, header, ++i);
+            }
         } catch (Exception ignored) {
         } finally {
             if (forwardInfo != null) {
-                queue.offer(forwardInfo);
+                forwardQueue.offer(forwardInfo);
             }
         }
         return result;
@@ -133,21 +115,25 @@ public class ForwardClient {
     public String exe(ForwardInfo forwardInfo, String url, MethodEnum method, Map<String, String> header) {
         String result = null;
         String targetUrl = forwardInfo.getTargetUrl();
-        RequestPack requestPack = buildRequestPack(targetUrl, forwardInfo.getTargetMethod());
-        setTargetHeader(forwardInfo, targetUrl, requestPack);
-        buildParams(requestPack, forwardInfo, method, url, header);
+        RequestPack requestPack = null;
+        if (targetUrl.equals("localhost")) {
+            requestPack = buildRequestPack(url, method.toString());
+            header = header == null ? new HashMap<>() : header;
+            setBaseHeader(header, url);
+            requestPack.setHeader(header);
+        } else {
+            requestPack = buildRequestPack(targetUrl, forwardInfo.getTargetMethod());
+            setTargetHeader(forwardInfo, requestPack);
+            buildParams(requestPack, forwardInfo, method, url, header);
+        }
+
         Integer httpStatus = 200;
         try (HttpResult httpResult = httpClientService.execute(requestPack)) {
             httpStatus = httpResult.getHttpStatus();
             result = parseJsonPath(httpResult.getEntityStr(), forwardInfo.getTargetPath());
         } catch (Exception ignored) {
         }
-        if (StringUtils.isEmpty(result) || httpStatus != 200) {
-            Set<String> hase = ERR_MAP.get(targetUrl);
-            hase = hase == null ? new HashSet<>() : hase;
-            hase.add(newURL(url).getHost());
-            ERR_MAP.put(targetUrl, hase);
-        }
+        System.out.println(forwardInfo.getTargetUrl() + "   -->  " + httpStatus);
         return result;
     }
 
@@ -156,16 +142,20 @@ public class ForwardClient {
      * 设置转发请求头
      *
      * @param forwardInfo forwardInfo
-     * @param targetUrl   targetUrl
      * @param requestPack requestPack
      */
-    private void setTargetHeader(ForwardInfo forwardInfo, String targetUrl, RequestPack requestPack) {
+    private void setTargetHeader(ForwardInfo forwardInfo, RequestPack requestPack) {
         Map<String, String> auto = new HashMap<>();
-        auto.put("Referer", targetUrl);
-        auto.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
+        String targetUrl = forwardInfo.getTargetUrl();
+        setBaseHeader(auto, targetUrl);
         parseHeader(forwardInfo.getTargetHeader(), auto);
-        auto.put("Host", newURL(targetUrl).getHost());
         requestPack.setHeader(auto);
+    }
+
+    private void setBaseHeader(Map<String, String> header, String url) {
+        header.put("Host", newURL(url).getHost());
+        header.put("Referer", url);
+        header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
     }
 
     /**
@@ -365,7 +355,6 @@ public class ForwardClient {
         }
         return token.getToken();
     }
-
 
     @Data
     public static class Token implements Serializable {
