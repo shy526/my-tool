@@ -335,7 +335,7 @@ public class ApiClientTest {
                 } else {
                     System.out.println(name + "," + hashName + "not get  id");
                 }
-                sleep(3000);
+               // sleep(2000);
 
             }
         }
