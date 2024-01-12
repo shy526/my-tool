@@ -169,7 +169,7 @@ public class ForwardClient {
      */
     private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, MethodEnum method, String url, Map<String, String> header) {
         String token = getToken(forwardInfo);
-        String headerStr = header2Str(header);
+        String headerStr = header2Str(header,forwardInfo.getKvSpace(),forwardInfo.getHeaderSpace());
         String paramsEl = forwardInfo.getParamsEl();
         JSONObject elMap = new JSONObject();
         URL temp = newURL(url);
@@ -211,15 +211,18 @@ public class ForwardClient {
      * @param header header
      * @return String
      */
-    private String header2Str(Map<String, String> header) {
+    private String header2Str(Map<String, String> header,String kvSpace,String headerSpace) {
+        kvSpace=StringUtils.isEmpty(kvSpace)?"=":kvSpace;
+        headerSpace=StringUtils.isEmpty(headerSpace)?",":headerSpace;
         StringBuilder headerSb = new StringBuilder();
         if (header != null && !header.isEmpty()) {
             for (Map.Entry<String, String> entry : header.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
-                headerSb.append(key).append("=").append(value).append(",");
+                headerSb.append(key).append(kvSpace).append(value).append(headerSpace);
             }
-            headerSb.deleteCharAt(headerSb.length() - 1);
+            int length = headerSb.length();
+            headerSb.delete(length -headerSpace.length(),length);
         }
         return headerSb.toString();
     }

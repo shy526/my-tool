@@ -282,12 +282,13 @@ public class ApiClientTest {
         HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
         Map<String, String> header = new HashMap<>();
         header.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
-        ForwardClient steamPageClient = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\steamPageForward.json", httpClientService);
-        ForwardClient steamIdClient = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\steamIdForward.json", httpClientService);
+     //   ForwardClient steamPageClient1 = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json", httpClientService);
+        ForwardClient steamPageClient = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\steamPageForward.json", httpClientService);
+        ForwardClient steamIdClient = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\steamIdForward.json", httpClientService);
         String pageUrl = "https://steamcommunity.com/market/search/render/?query=&start=%s&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=233&norender=1";
         String getSteamIdUrl = "https://steamcommunity.com/market/listings/570/%s";
         Pattern reg = Pattern.compile("Market_LoadOrderSpread\\(\\s*(\\d+)\\s*\\);");
-        File file = new File("C:\\Users\\sunda\\Desktop\\data2饰品信息.txt");
+        File file = new File("D:\\个人文件\\图片\\data2Info.txt");
         Set<String> hash = new HashSet<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
@@ -334,9 +335,7 @@ public class ApiClientTest {
                 } else {
                     System.out.println(name + "," + hashName + "not get  id");
                 }
-                if (i%10==0){
-                    sleep(5000);
-                }
+                sleep(3000);
 
             }
         }

@@ -24,5 +24,7 @@ public class ForwardInfo implements Serializable {
     private boolean chineseMainland;
     private String targetHeader;
     private String tokenHeader;
+    private String kvSpace;
+    private String headerSpace;
 
 }
