@@ -6,11 +6,11 @@ import com.github.shy526.http.HttpClientService;
 import com.github.shy526.http.HttpResult;
 import com.github.shy526.http.RequestPack;
 import com.github.shy526.string.ElAnalysis;
+import com.google.common.net.InternetDomainName;
 import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -36,10 +36,16 @@ public class ForwardClient {
     private final static Map<String, Token> TOKEN_MAP = new HashMap<>();
     private HttpClientService httpClientService;
 
-    private ForwardClient() {
+    public ForwardClient(HttpClientService httpClientService, List<ForwardInfo> forwardInfos) {
+        this.httpClientService = httpClientService;
+        forwardQueue.addAll(forwardInfos);
     }
 
-    public static ForwardClient readForwardInfo(String path, HttpClientService httpClientService) {
+    public ForwardClient(HttpClientService httpClientService) {
+        this.httpClientService = httpClientService;
+    }
+
+    public static List<ForwardInfo> readForwardInfo(String path, HttpClientService httpClientService) {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             String line;
@@ -59,14 +65,16 @@ public class ForwardClient {
         if (forwardInfos.isEmpty()) {
             return null;
         }
-        ForwardClient forwardClient = new ForwardClient();
-        forwardClient.httpClientService = httpClientService;
+        ForwardClient forwardClient = new ForwardClient(httpClientService);
         for (ForwardInfo forwardInfo : forwardInfos) {
             String result = forwardClient.exe(forwardInfo, GET_IP_URL, MethodEnum.GET, null);
+            String paramsEl = forwardInfo.getParamsEl();
+            forwardInfo.setHeaderFlag(paramsEl.contains("${header}"));
             if (StringUtils.isEmpty(result)) {
-                System.out.println(forwardInfo.getTargetUrl() + "      -> err req");
+                forwardInfo.setTestFlag(false);
                 continue;
             }
+            forwardInfo.setTestFlag(true);
             JSONObject jsonObject = JSON.parseObject(result);
             JSONObject data = jsonObject.getJSONObject("data");
             String ip = data.getString("addr");
@@ -80,10 +88,8 @@ public class ForwardClient {
             }
             String addr = country + "-" + province + "-" + data.getString("city");
             forwardInfo.setAddr(addr);
-            System.out.println(forwardInfo.getTargetUrl() + "-->" + addr);
-            forwardClient.forwardQueue.add(forwardInfo);
         }
-        return forwardClient;
+        return forwardInfos;
     }
 
     public String exe(String url, MethodEnum method, Map<String, String> header) {
@@ -132,10 +138,28 @@ public class ForwardClient {
         try (HttpResult httpResult = httpClientService.execute(requestPack)) {
             httpStatus = httpResult.getHttpStatus();
             result = parseJsonPath(httpResult.getEntityStr(), forwardInfo.getTargetPath());
+            String targetCode = forwardInfo.getTargetCode();
+            targetCode = targetCode == null ? "" : targetCode.toUpperCase();
+            switch (targetCode) {
+                case "BASE64":
+                    result = new String(Base64.getDecoder().decode(result.replace(" ", "+")), StandardCharsets.UTF_8);
+                    break;
+                case "HASH":
+                    break;
+                default:
+            }
         } catch (Exception ignored) {
         }
         System.out.println(forwardInfo.getTargetUrl() + "   -->  " + httpStatus);
         return result;
+    }
+
+    public static void main(String[] args) {
+        String str = "eyJjb2RlIjowLCJtZXNzYWdlIjoiMCIsInR0bCI6MSwiZGF0YSI6eyJhZGRyIjoiMTA3LjE3OC4yMDcuMjciLCJjb3VudHJ5Ijoi6Z+p5Zu9IiwicHJvdmluY2UiOiLpppblsJQiLCJjaXR5IjoiIiwiaXNwIjoiY2xvdWQuZ29vZ2xlLmNvbSIsImxhdGl0dWRlIjoiMzcuNTY2NTM1IiwibG9uZ2l0dWRlIjoiMTI2Ljk3Nzk2OSJ9fQ";
+
+        byte[] decode = Base64.getDecoder().decode(str);
+        String s = new String(decode);
+        System.out.println("decode = " + decode);
     }
 
 
@@ -154,8 +178,13 @@ public class ForwardClient {
     }
 
     private void setBaseHeader(Map<String, String> header, String url) {
-        header.put("Host", newURL(url).getHost());
+        URL temp = newURL(url);
+        String host = temp.getHost();
+        InternetDomainName domainName = InternetDomainName.from(host);
+        String top = domainName.topPrivateDomain().toString();
+        header.put("Host", host);
         header.put("Referer", url);
+        header.put("Origin", temp.getProtocol() + "://" + top);
         header.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36 Edg/118.0.2088.61");
     }
 
@@ -170,7 +199,6 @@ public class ForwardClient {
      */
     private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, MethodEnum method, String url, Map<String, String> header) {
         String token = getToken(forwardInfo);
-        header = new HashMap<>();
         String headerStr = header2Str(header, forwardInfo);
         String paramsEl = forwardInfo.getParamsEl();
         JSONObject elMap = new JSONObject();
@@ -184,27 +212,36 @@ public class ForwardClient {
         elMap.put("header", headerStr);
         String paramMod = forwardInfo.getParamMod().toUpperCase();
         String params = ElAnalysis.process(paramsEl, elMap);
-
         JSONObject paramsJson = JSON.parseObject(params);
         Map<String, String> paramsMap = paramsJson.getInnerMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, item -> item.getValue().toString()));
+        //Content-Type:
+        //application/json
+        String contentType = "Content-Type";
+        String contentTypeVal = null;
         switch (paramMod) {
             case "X-WWW-FORM-URLENCODED":
+                contentType = "application/x-www-form-urlencoded";
                 requestPack.setFormat(paramsMap, CharEncoding.UTF_8);
                 break;
             case "FORM-DATA":
-                ContentType contentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
+                contentTypeVal = "Multipart/form-data";
+                ContentType tempContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
                 MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
                 for (Map.Entry<String, String> item : paramsMap.entrySet()) {
-                    multipartEntityBuilder.addPart(item.getKey(), new StringBody(item.getValue(), contentType));
+                    multipartEntityBuilder.addPart(item.getKey(), new StringBody(item.getValue(), tempContentType));
                 }
                 ((HttpPost) requestPack.getRequestBase()).setEntity(multipartEntityBuilder.build());
                 break;
             case "JSON":
+                contentTypeVal = "application/json";
                 requestPack.setBodyStr(paramsJson.toJSONString());
                 break;
             case "HEADER":
                 requestPack.setHeader(paramsMap);
                 break;
+        }
+        if (contentTypeVal != null) {
+            requestPack.setHeader(contentType, contentTypeVal);
         }
     }
 
@@ -216,7 +253,7 @@ public class ForwardClient {
      */
     private String header2Str(Map<String, String> header, ForwardInfo forwardInfo) {
         String headerFormat = forwardInfo.getHeaderFormat();
-        headerFormat = StringUtils.isEmpty(headerFormat) ? "${kev}:${val}" : headerFormat;
+        headerFormat = StringUtils.isEmpty(headerFormat) ? "${key}:${val}" : headerFormat;
         String headerSpace = forwardInfo.getHeaderSpace();
         headerSpace = StringUtils.isEmpty(headerSpace) ? "," : headerSpace;
         StringBuilder headerSb = new StringBuilder();

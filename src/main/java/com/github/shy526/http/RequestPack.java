@@ -1,6 +1,7 @@
 package com.github.shy526.http;
 
 import org.apache.commons.codec.CharEncoding;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
@@ -58,6 +59,14 @@ public class RequestPack {
 
     public RequestPack(HttpRequestBase requestBase) {
         this.requestBase = requestBase;
+    }
+
+    public RequestPack setHeader(String key, String val) {
+        if (StringUtils.isEmpty(val)) {
+            return this;
+        }
+        requestBase.setHeader(key, val);
+        return this;
     }
 
     public RequestPack setHeader(Map<String, String> header) {

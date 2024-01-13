@@ -9,7 +9,7 @@ import java.util.List;
 public class ForwardInfo implements Serializable {
 
     /**
-     *转发需要的参数
+     * 转发需要的参数
      */
     private String paramsEl;
     /**
@@ -45,6 +45,8 @@ public class ForwardInfo implements Serializable {
      * 转发的请求方式 get post
      */
     private String targetMethod;
+
+    private String targetCode;
     /**
      * 该转发支持什么 请求 get set 暂时不支持
      */
@@ -82,6 +84,8 @@ public class ForwardInfo implements Serializable {
     /**
      * 是否在中国大陆
      */
-    private boolean chineseMainland;
+    private Boolean chineseMainland = true;
 
+    private Boolean headerFlag = false;
+    private Boolean testFlag = false;
 }

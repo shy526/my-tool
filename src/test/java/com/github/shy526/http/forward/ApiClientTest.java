@@ -279,16 +279,27 @@ public class ApiClientTest {
 
     @Test
     public void testExec444() {
-        HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
+    HttpClientService httpClientService = HttpClientFactory.getHttpClientService(new HttpClientProperties());
+        List<ForwardInfo> forwardInfos = ForwardClient.readForwardInfo("E:\\qq\\cache\\919200345\\FileRecv\\test.json", httpClientService);
+        List<ForwardInfo> page = new ArrayList<>();
+        List<ForwardInfo> id = new ArrayList<>();
+        for (ForwardInfo forwardInfo : forwardInfos) {
+
+            if (!forwardInfo.getChineseMainland()) {
+                id.add(forwardInfo);
+            }
+            if (!forwardInfo.getChineseMainland() && forwardInfo.getHeaderFlag()) {
+                page.add(forwardInfo);
+            }
+        }
         Map<String, String> header = new HashMap<>();
         header.put("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6");
-     //   ForwardClient steamPageClient1 = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\test.json", httpClientService);
-        ForwardClient steamPageClient = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\steamPageForward.json", httpClientService);
-        ForwardClient steamIdClient = ForwardClient.readForwardInfo("D:\\个人文件\\图片\\steamIdForward.json", httpClientService);
+        ForwardClient steamPageClient = new ForwardClient(httpClientService, page);
+        ForwardClient steamIdClient = new ForwardClient(httpClientService, id);
         String pageUrl = "https://steamcommunity.com/market/search/render/?query=&start=%s&count=100&search_descriptions=0&sort_column=popular&sort_dir=desc&appid=570&currency=233&norender=1";
         String getSteamIdUrl = "https://steamcommunity.com/market/listings/570/%s";
         Pattern reg = Pattern.compile("Market_LoadOrderSpread\\(\\s*(\\d+)\\s*\\);");
-        File file = new File("D:\\个人文件\\图片\\data2Info.txt");
+        File file = new File("C:\\Users\\sunda\\Desktop\\data2Info.txt");
         Set<String> hash = new HashSet<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
@@ -300,7 +311,7 @@ public class ApiClientTest {
         }
         PrintWriter fileOut = null;
         try {
-            fileOut = new PrintWriter(new FileWriter(file,true),true);
+            fileOut = new PrintWriter(new FileWriter(file, true), true);
         } catch (Exception ignored) {
         }
         for (int index = 0; ; index += 100) {
@@ -335,7 +346,7 @@ public class ApiClientTest {
                 } else {
                     System.out.println(name + "," + hashName + "not get  id");
                 }
-               // sleep(2000);
+                // sleep(2000);
 
             }
         }
