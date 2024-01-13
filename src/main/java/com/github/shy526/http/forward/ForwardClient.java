@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.Getter;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.Header;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -169,7 +170,8 @@ public class ForwardClient {
      */
     private void buildParams(RequestPack requestPack, ForwardInfo forwardInfo, MethodEnum method, String url, Map<String, String> header) {
         String token = getToken(forwardInfo);
-        String headerStr = header2Str(header,forwardInfo.getKvSpace(),forwardInfo.getHeaderSpace());
+        header = new HashMap<>();
+        String headerStr = header2Str(header, forwardInfo);
         String paramsEl = forwardInfo.getParamsEl();
         JSONObject elMap = new JSONObject();
         URL temp = newURL(url);
@@ -199,6 +201,7 @@ public class ForwardClient {
                 break;
             case "JSON":
                 requestPack.setBodyStr(paramsJson.toJSONString());
+                break;
             case "HEADER":
                 requestPack.setHeader(paramsMap);
                 break;
@@ -211,18 +214,21 @@ public class ForwardClient {
      * @param header header
      * @return String
      */
-    private String header2Str(Map<String, String> header,String kvSpace,String headerSpace) {
-        kvSpace=StringUtils.isEmpty(kvSpace)?"=":kvSpace;
-        headerSpace=StringUtils.isEmpty(headerSpace)?",":headerSpace;
+    private String header2Str(Map<String, String> header, ForwardInfo forwardInfo) {
+        String headerFormat = forwardInfo.getHeaderFormat();
+        headerFormat = StringUtils.isEmpty(headerFormat) ? "${kev}:${val}" : headerFormat;
+        String headerSpace = forwardInfo.getHeaderSpace();
+        headerSpace = StringUtils.isEmpty(headerSpace) ? "," : headerSpace;
         StringBuilder headerSb = new StringBuilder();
+        JSONObject prop = new JSONObject();
         if (header != null && !header.isEmpty()) {
             for (Map.Entry<String, String> entry : header.entrySet()) {
-                String key = entry.getKey();
-                String value = entry.getValue();
-                headerSb.append(key).append(kvSpace).append(value).append(headerSpace);
+                prop.put("key", entry.getKey());
+                prop.put("val", entry.getKey());
+                headerSb.append(ElAnalysis.process(headerFormat, prop)).append(",");
             }
             int length = headerSb.length();
-            headerSb.delete(length -headerSpace.length(),length);
+            headerSb.delete(length - headerSpace.length(), length);
         }
         return headerSb.toString();
     }
