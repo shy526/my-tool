@@ -315,7 +315,7 @@ public class ApiClientTest {
         } catch (Exception ignored) {
         }
         for (int index = 0; ; index += 100) {
-            sleep(5000);
+          //  sleep(5000);
             String result = steamPageClient.exe(String.format(pageUrl, index), MethodEnum.GET, header);
             JSONObject parse = JSONObject.parseObject(result);
             JSONArray results = parse.getJSONArray("results");
@@ -335,7 +335,8 @@ public class ApiClientTest {
                 }
                 String steamIdHtml = steamIdClient.exe(String.format(getSteamIdUrl, hashName), MethodEnum.GET, header);
                 if (StringUtils.isEmpty(steamIdHtml)) {
-                    System.out.println(name + "," + hashName + "not get  id");
+                    System.out.println(name + "," + hashName + "     steamIdHtml is null not id");
+                    System.out.println(String.format(getSteamIdUrl, hashName));
                     continue;
                 }
                 String itemId = null;
@@ -344,9 +345,10 @@ public class ApiClientTest {
                     itemId = matcher.group(1);
                     fileOut.println(itemId + "," + name + "," + hashName);
                 } else {
-                    System.out.println(name + "," + hashName + "not get  id");
+                    System.out.println(name + "," + hashName + "      matcher id not  fin");
+                    System.out.println(String.format(getSteamIdUrl, hashName));
                 }
-                // sleep(2000);
+             //    sleep(1000);
 
             }
         }

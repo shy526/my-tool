@@ -93,23 +93,13 @@ public class ForwardClient {
     }
 
     public String exe(String url, MethodEnum method, Map<String, String> header) {
-        return exe(url, method, header, 0);
-    }
-
-
-    public String exe(String url, MethodEnum method, Map<String, String> header, int i) {
         ForwardInfo forwardInfo = null;
         String result = null;
         try {
             forwardInfo = forwardQueue.take();
-            if (i >= 1) {
-                return null;
-            }
             result = exe(forwardInfo, url, method, header);
-            if (StringUtils.isEmpty(result)) {
-                return exe(url, method, header, ++i);
-            }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             if (forwardInfo != null) {
                 forwardQueue.offer(forwardInfo);
@@ -150,18 +140,9 @@ public class ForwardClient {
             }
         } catch (Exception ignored) {
         }
-        System.out.println(forwardInfo.getTargetUrl() + "   -->  " + httpStatus);
+        System.out.println(forwardInfo.getTargetUrl() + "   ---   "+StringUtils.isNotEmpty(result)+"   ---   " + httpStatus);
         return result;
     }
-
-    public static void main(String[] args) {
-        String str = "eyJjb2RlIjowLCJtZXNzYWdlIjoiMCIsInR0bCI6MSwiZGF0YSI6eyJhZGRyIjoiMTA3LjE3OC4yMDcuMjciLCJjb3VudHJ5Ijoi6Z+p5Zu9IiwicHJvdmluY2UiOiLpppblsJQiLCJjaXR5IjoiIiwiaXNwIjoiY2xvdWQuZ29vZ2xlLmNvbSIsImxhdGl0dWRlIjoiMzcuNTY2NTM1IiwibG9uZ2l0dWRlIjoiMTI2Ljk3Nzk2OSJ9fQ";
-
-        byte[] decode = Base64.getDecoder().decode(str);
-        String s = new String(decode);
-        System.out.println("decode = " + decode);
-    }
-
 
     /**
      * 设置转发请求头
@@ -214,17 +195,11 @@ public class ForwardClient {
         String params = ElAnalysis.process(paramsEl, elMap);
         JSONObject paramsJson = JSON.parseObject(params);
         Map<String, String> paramsMap = paramsJson.getInnerMap().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, item -> item.getValue().toString()));
-        //Content-Type:
-        //application/json
-        String contentType = "Content-Type";
-        String contentTypeVal = null;
         switch (paramMod) {
             case "X-WWW-FORM-URLENCODED":
-                contentType = "application/x-www-form-urlencoded";
                 requestPack.setFormat(paramsMap, CharEncoding.UTF_8);
                 break;
             case "FORM-DATA":
-                contentTypeVal = "Multipart/form-data";
                 ContentType tempContentType = ContentType.create("text/plain", StandardCharsets.UTF_8);
                 MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
                 for (Map.Entry<String, String> item : paramsMap.entrySet()) {
@@ -233,16 +208,14 @@ public class ForwardClient {
                 ((HttpPost) requestPack.getRequestBase()).setEntity(multipartEntityBuilder.build());
                 break;
             case "JSON":
-                contentTypeVal = "application/json";
+                requestPack.setHeader("Content-Type", "application/json");
                 requestPack.setBodyStr(paramsJson.toJSONString());
                 break;
             case "HEADER":
                 requestPack.setHeader(paramsMap);
                 break;
         }
-        if (contentTypeVal != null) {
-            requestPack.setHeader(contentType, contentTypeVal);
-        }
+
     }
 
     /**
@@ -261,7 +234,7 @@ public class ForwardClient {
         if (header != null && !header.isEmpty()) {
             for (Map.Entry<String, String> entry : header.entrySet()) {
                 prop.put("key", entry.getKey());
-                prop.put("val", entry.getKey());
+                prop.put("val", entry.getValue());
                 headerSb.append(ElAnalysis.process(headerFormat, prop)).append(",");
             }
             int length = headerSb.length();
